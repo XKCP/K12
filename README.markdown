@@ -1,4 +1,15 @@
-# What is the purpose of this repository?
+# What is KangarooTwelve ?
+
+[**KangarooTwelve**][k12] (or **K12**) is a fast and secure extendable-output function (XOF), the generalization of hash functions to arbitrary output lengths.
+Derived from Keccak, it aims at higher speeds than FIPS 202's SHA-3 and SHAKE functions, while retaining their flexibility and basis of security.
+
+On high-end platforms, it can exploit a high degree of parallelism, whether using multiple cores or the single-instruction multiple-data (SIMD) instruction set of modern processors.
+On Intel's® Haswell and Skylake architectures, KangarooTwelve tops at less than 1.5 cycles/byte for long messages on a single core, and at 0.55 cycles/byte on the SkylakeX architecture.
+On low-end platforms, as well as for short messages, it also benefits from about a factor two speed-up compared to the fastest FIPS 202 instance SHAKE128.
+
+More details can be found in our [ACNS Paper][eprint].
+
+# What can I find here?
 
 This repository contains source code that implements the extandable output (or hash) function [**KangarooTwelve**][k12] (or **K12**).
 Its purpose is to offer optimized implementations of K12 and nothing else.
@@ -24,13 +35,17 @@ To build, the following tools are needed:
 
 The different targets are defined in [`Makefile.build`](Makefile.build). This file is expanded into a regular makefile using *xsltproc*. To use it, simply type, e.g.,
 
-> `make generic64/K12Tests`
+```
+make generic64/K12Tests
+```
 
 to build K12Tests generically optimized for 64-bit platforms. The name before the slash indicates the platform, while the part after the slash is the executable to build. As another example, the static (resp. dynamic) library is built by typing `make generic64/libK12.a` (resp. `.so`) or similarly with `generic64` replaced with the appropriate platform name.  An alternate C compiler can be specified via the `CC` environment variable.
 
 Instead of building an executable with *GCC*, one can choose to select the files needed and make a package. For this, simply append `.pack` to the target name, e.g.,
 
-> `make generic64/K12Tests.pack`
+```
+make generic64/K12Tests.pack
+```
 
 This creates a `.tar.gz` archive with all the necessary files to build the given target.
 
@@ -40,3 +55,4 @@ For Microsoft Visual Studio support and other details, please refer to the [XKCP
 
 [k12]: https://keccak.team/kangarootwelve.html
 [xkcp]: https://github.com/XKCP/XKCP
+[eprint]: https://eprint.iacr.org/2016/770.pdf
