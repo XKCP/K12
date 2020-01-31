@@ -1,7 +1,5 @@
 /*
-Implementation by the Keccak Team, namely, Guido Bertoni, Joan Daemen,
-Michaël Peeters, Gilles Van Assche and Ronny Van Keer,
-hereby denoted as "the implementer".
+Implementation by Gilles Van Assche and Ronny Van Keer, hereby denoted as "the implementer".
 
 For more information, feedback or questions, please refer to our website:
 https://keccak.team/
@@ -15,10 +13,12 @@ http://creativecommons.org/publicdomain/zero/1.0/
 Please refer to the XKCP for more details.
 */
 
+#if !(defined(__AVX2__) || defined(__AVX512F__))
+
 #include <string.h>
 #include <stdlib.h>
 #include "brg_endian.h"
-#include "KeccakP-1600-config.h"
+#include "KeccakP-1600-SnP.h"
 
 typedef unsigned char UINT8;
 typedef unsigned long long int UINT64;
@@ -1157,3 +1157,5 @@ size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount,
     copyToState(stateAsLanes, A)
     return originalDataByteLen - dataByteLen;
 }
+
+#endif
