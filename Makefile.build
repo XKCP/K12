@@ -15,8 +15,6 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <gcc>-fomit-frame-pointer</gcc>
         <gcc>-O2</gcc>
         <gcc>-g0</gcc>
-        <gcc>-march=native</gcc>
-        <gcc>-mtune=native</gcc>
     </fragment>
 
     <!-- Keccak-p[1600] -->
@@ -31,9 +29,9 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <h>lib/Optimized64/KeccakP-1600-SnP.h</h>
         <c>lib/Optimized64/KeccakP-1600-AVX2.s</c>
         <c>lib/Optimized64/KeccakP-1600-AVX512.s</c>
-        <c>lib/Optimized64/KeccakP-1600-times2.c</c>
-        <c>lib/Optimized64/KeccakP-1600-times4.c</c>
-        <c>lib/Optimized64/KeccakP-1600-times8.c</c>
+        <c gcc="-mssse3">lib/Optimized64/KeccakP-1600-timesN-SSSE3.c</c>
+        <c gcc="-mavx2">lib/Optimized64/KeccakP-1600-timesN-AVX2.c</c>
+        <c gcc="-mavx512f -mavx512vl">lib/Optimized64/KeccakP-1600-timesN-AVX512.c</c>
     </fragment>
 
     <!-- KangarooTwelve -->
@@ -67,7 +65,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- Generically optimized 32-bit implementation -->
     <fragment name="generic32" inherits="inplace32bi"/>
 
-    <!-- Generically optimized 64-bit implementation, including SSE2, AVX2 and AVX512 -->
+    <!-- Generically optimized 64-bit implementation, including SSSE3, AVX2 and AVX512 -->
     <fragment name="generic64" inherits="optimized64"/>
 
     <!-- Target names are of the form x/y where x is taken from the first set and y from the second set. -->
