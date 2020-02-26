@@ -315,6 +315,7 @@ void testKangarooTwelve(void)
 #endif
     const unsigned char* checksum = (const unsigned char*)"\x61\x4d\x7a\xf8\xd5\xcc\xd0\xe1\x02\x53\x7d\x21\x5e\x39\x05\xed";
 
+#ifndef KeccakP1600_disableParallelism
     // Read feature availability
     KangarooTwelve_EnableAllCpuFeatures();
     int cpu_has_AVX512 = KangarooTwelve_DisableAVX512();
@@ -323,8 +324,10 @@ void testKangarooTwelve(void)
 
     // Test without vectorization
     printf(" - Testing without vectorization:\n");
+#endif
     selfTestKangarooTwelve(checksum);
 
+#ifndef KeccakP1600_disableParallelism
     // Test with SSSE3 only if it's available
     if (cpu_has_SSSE3) {
         printf("\n - Testing with SSSE3 enabled:\n");
@@ -346,4 +349,5 @@ void testKangarooTwelve(void)
         KangarooTwelve_EnableAllCpuFeatures();
         selfTestKangarooTwelve(checksum);
     }
+#endif
 }

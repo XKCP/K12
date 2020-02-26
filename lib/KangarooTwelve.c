@@ -574,6 +574,7 @@ void KangarooTwelve_SetProcessorCapabilities(void)
     K12_enableAVX512 = (features & AVX512F) && (features & AVX512VL) && !K12_AVX512_requested_disabled;
 }
 
+#ifndef KeccakP1600_disableParallelism
 int KangarooTwelve_DisableSSSE3(void) {
     KangarooTwelve_SetProcessorCapabilities();
     K12_SSSE3_requested_disabled = 1;
@@ -613,3 +614,4 @@ void KangarooTwelve_EnableAllCpuFeatures(void) {
     K12_AVX512_requested_disabled = 0;
     KangarooTwelve_SetProcessorCapabilities();
 }
+#endif  // KeccakP1600_disableParallelism

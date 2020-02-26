@@ -135,15 +135,18 @@ void testKangarooTwelvePerformance()
 }
 void testPerformance()
 {
+#ifndef KeccakP1600_disableParallelism
     // Read feature availability
     KangarooTwelve_EnableAllCpuFeatures();
     int cpu_has_AVX512 = KangarooTwelve_DisableAVX512();
     int cpu_has_AVX2 = KangarooTwelve_DisableAVX2();
     int cpu_has_SSSE3 = KangarooTwelve_DisableSSSE3();
+#endif
 
     // Test without vectorization
     testKangarooTwelvePerformance();
 
+#ifndef KeccakP1600_disableParallelism
     // Test with SSSE3 only if it's available
     if (cpu_has_SSSE3) {
         printf("\n");
@@ -165,6 +168,7 @@ void testPerformance()
         KangarooTwelve_EnableAllCpuFeatures();
         testKangarooTwelvePerformance();
     }
+#endif
 }
 
 void bubbleSort(double *list, unsigned int size)

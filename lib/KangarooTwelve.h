@@ -107,6 +107,7 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
   */
 int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *output, size_t outputByteLen);
 
+#ifndef KeccakP1600_disableParallelism
 /**
   * Functions to selectively disable the use of CPU features. Should be rarely
   * needed; if you're not sure this is what you want, don't worry about it.
@@ -130,5 +131,6 @@ int KangarooTwelve_DisableSSSE3(void);
   * always has no effect if no CPU features have been explicitly disabled.
   */
 void KangarooTwelve_EnableAllCpuFeatures(void);
+#endif  // KeccakP1600_disableParallelism
 
 #endif
