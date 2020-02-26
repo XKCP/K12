@@ -13,7 +13,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include <stdint.h>
 #include "KangarooTwelve.h"
 
-void KangarooTwelve_SetProcessorCapabilities();
+void KangarooTwelve_SetProcessorCapabilities(void);
 int K12_enableSSSE3 = 0;
 int K12_enableAVX2 = 0;
 int K12_enableAVX512 = 0;
@@ -512,7 +512,7 @@ enum cpu_feature {
 static enum cpu_feature g_cpu_features = UNDEFINED;
 
 static enum cpu_feature
-    get_cpu_features() {
+    get_cpu_features(void) {
 
   if (g_cpu_features != UNDEFINED) {
     return g_cpu_features;
@@ -563,7 +563,7 @@ static enum cpu_feature
   }
 }
 
-void KangarooTwelve_SetProcessorCapabilities()
+void KangarooTwelve_SetProcessorCapabilities(void)
 {
     enum cpu_feature features = get_cpu_features();
     K12_enableSSSE3 = (features & SSSE3);
