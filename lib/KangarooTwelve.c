@@ -14,6 +14,9 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "KangarooTwelve.h"
 
 void KangarooTwelve_SetProcessorCapabilities(void);
+int K12_SSSE3_requested_disabled = 0;
+int K12_AVX2_requested_disabled = 0;
+int K12_AVX512_requested_disabled = 0;
 int K12_enableSSSE3 = 0;
 int K12_enableAVX2 = 0;
 int K12_enableAVX512 = 0;
@@ -566,7 +569,47 @@ static enum cpu_feature
 void KangarooTwelve_SetProcessorCapabilities(void)
 {
     enum cpu_feature features = get_cpu_features();
-    K12_enableSSSE3 = (features & SSSE3);
-    K12_enableAVX2 = (features & AVX2);
-    K12_enableAVX512 = (features & AVX512F) && (features & AVX512VL);
+    K12_enableSSSE3 = (features & SSSE3) && !K12_SSSE3_requested_disabled;
+    K12_enableAVX2 = (features & AVX2) && !K12_AVX2_requested_disabled;
+    K12_enableAVX512 = (features & AVX512F) && (features & AVX512VL) && !K12_AVX512_requested_disabled;
+}
+
+int KangarooTwelve_DisableSSSE3(void) {
+    KangarooTwelve_SetProcessorCapabilities();
+    K12_SSSE3_requested_disabled = 1;
+    if (K12_enableSSSE3) {
+        KangarooTwelve_SetProcessorCapabilities();
+        return 1;  // SSSE3 was disabled on this call.
+    } else {
+        return 0;  // Nothing changed.
+    }
+}
+
+int KangarooTwelve_DisableAVX2(void) {
+    KangarooTwelve_SetProcessorCapabilities();
+    K12_AVX2_requested_disabled = 1;
+    if (K12_enableAVX2) {
+        KangarooTwelve_SetProcessorCapabilities();
+        return 1;  // AVX2 was disabled on this call.
+    } else {
+        return 0;  // Nothing changed.
+    }
+}
+
+int KangarooTwelve_DisableAVX512(void) {
+    KangarooTwelve_SetProcessorCapabilities();
+    K12_AVX512_requested_disabled = 1;
+    if (K12_enableAVX512) {
+        KangarooTwelve_SetProcessorCapabilities();
+        return 1;  // AVX512 was disabled on this call.
+    } else {
+        return 0;  // Nothing changed.
+    }
+}
+
+void KangarooTwelve_EnableAllCpuFeatures(void) {
+    K12_SSSE3_requested_disabled = 0;
+    K12_AVX2_requested_disabled = 0;
+    K12_AVX512_requested_disabled = 0;
+    KangarooTwelve_SetProcessorCapabilities();
 }

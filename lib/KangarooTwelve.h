@@ -107,4 +107,28 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
   */
 int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *output, size_t outputByteLen);
 
+/**
+  * Functions to selectively disable the use of CPU features. Should be rarely
+  * needed; if you're not sure this is what you want, don't worry about it.
+  *
+  * This can be useful in an environment where it is detrimental to online large
+  * vector units on the CPU, since doing so can lead to downclocking,
+  * performance hits in other threads sharing the same CPU core, and short
+  * delays while the CPU's power license is increased to online the vector unit.
+  * In the majority of situations, however, this should rarely matter and it is
+  * often the case that the performance difference will be a wash or even an
+  * overall improvement despite the downsides.
+  * @return 1 if the feature was enabled and available and has been turned off,
+  *     0 if it was already disabled or unavailable.
+  */
+int KangarooTwelve_DisableAVX512(void);
+int KangarooTwelve_DisableAVX2(void);
+int KangarooTwelve_DisableSSSE3(void);
+
+/**
+  * Function to reset all CPU features to enabled-if-available. Calling this
+  * always has no effect if no CPU features have been explicitly disabled.
+  */
+void KangarooTwelve_EnableAllCpuFeatures(void);
+
 #endif
