@@ -11,7 +11,8 @@
 # (https://github.com/dot-asm/cryptogams/blob/master/x86_64/keccak1600-avx512.pl).
 # The rest of the code was written by Ronny Van Keer.
 
-.arch .avx512f
+# This directive is unsupported by clang.
+# .arch .avx512f
 
 .text
 
