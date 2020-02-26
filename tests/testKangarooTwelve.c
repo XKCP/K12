@@ -313,6 +313,37 @@ void testKangarooTwelve(void)
     printKangarooTwelveTestVectors();
     writeTestKangarooTwelve("KangarooTwelve.txt");
 #endif
+    const unsigned char* checksum = (const unsigned char*)"\x61\x4d\x7a\xf8\xd5\xcc\xd0\xe1\x02\x53\x7d\x21\x5e\x39\x05\xed";
 
-    selfTestKangarooTwelve((const unsigned char *)"\x61\x4d\x7a\xf8\xd5\xcc\xd0\xe1\x02\x53\x7d\x21\x5e\x39\x05\xed");
+    // Read feature availability
+    KangarooTwelve_EnableAllCpuFeatures();
+    int cpu_has_AVX512 = KangarooTwelve_DisableAVX512();
+    int cpu_has_AVX2 = KangarooTwelve_DisableAVX2();
+    int cpu_has_SSSE3 = KangarooTwelve_DisableSSSE3();
+
+    // Test without vectorization
+    printf(" - Testing without vectorization:\n");
+    selfTestKangarooTwelve(checksum);
+
+    // Test with SSSE3 only if it's available
+    if (cpu_has_SSSE3) {
+        printf("\n - Testing with SSSE3 enabled:\n");
+        KangarooTwelve_EnableAllCpuFeatures();
+        KangarooTwelve_DisableAVX512();
+        KangarooTwelve_DisableAVX2();
+        selfTestKangarooTwelve(checksum);
+    }
+    // Test with SSSE3 and AVX2 if they're available
+    if (cpu_has_AVX2) {
+        printf("\n - Testing with AVX2 enabled:\n");
+        KangarooTwelve_EnableAllCpuFeatures();
+        KangarooTwelve_DisableAVX512();
+        selfTestKangarooTwelve(checksum);
+    }
+    // Finally, test with everything enabled if we have AVX512
+    if (cpu_has_AVX512) {
+        printf("\n - Testing with AVX512 enabled:\n");
+        KangarooTwelve_EnableAllCpuFeatures();
+        selfTestKangarooTwelve(checksum);
+    }
 }
