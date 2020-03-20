@@ -370,24 +370,61 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
 #define Chi(a,b,c)                  _mm512_ternarylogic_epi64(a,b,c,0xD2)
 #define CONST_64(a)                 _mm512_set1_epi64(a)
 #define ZERO()                      _mm512_setzero_si512()
+#define LOAD(p)                     _mm512_loadu_si512(p)
+
+#define LoadAndTranspose8(dataAsLanes, offset) \
+    t0 = LOAD((dataAsLanes) + (offset) + 0*chunkSize/8); \
+    t1 = LOAD((dataAsLanes) + (offset) + 1*chunkSize/8); \
+    t2 = LOAD((dataAsLanes) + (offset) + 2*chunkSize/8); \
+    t3 = LOAD((dataAsLanes) + (offset) + 3*chunkSize/8); \
+    t4 = LOAD((dataAsLanes) + (offset) + 4*chunkSize/8); \
+    t5 = LOAD((dataAsLanes) + (offset) + 5*chunkSize/8); \
+    t6 = LOAD((dataAsLanes) + (offset) + 6*chunkSize/8); \
+    t7 = LOAD((dataAsLanes) + (offset) + 7*chunkSize/8); \
+    r0 = _mm512_unpacklo_epi64(t0, t1); \
+    r1 = _mm512_unpackhi_epi64(t0, t1); \
+    r2 = _mm512_unpacklo_epi64(t2, t3); \
+    r3 = _mm512_unpackhi_epi64(t2, t3); \
+    r4 = _mm512_unpacklo_epi64(t4, t5); \
+    r5 = _mm512_unpackhi_epi64(t4, t5); \
+    r6 = _mm512_unpacklo_epi64(t6, t7); \
+    r7 = _mm512_unpackhi_epi64(t6, t7); \
+    t0 = _mm512_shuffle_i32x4(r0, r2, 0x88); \
+    t1 = _mm512_shuffle_i32x4(r1, r3, 0x88); \
+    t2 = _mm512_shuffle_i32x4(r0, r2, 0xdd); \
+    t3 = _mm512_shuffle_i32x4(r1, r3, 0xdd); \
+    t4 = _mm512_shuffle_i32x4(r4, r6, 0x88); \
+    t5 = _mm512_shuffle_i32x4(r5, r7, 0x88); \
+    t6 = _mm512_shuffle_i32x4(r4, r6, 0xdd); \
+    t7 = _mm512_shuffle_i32x4(r5, r7, 0xdd); \
+    r0 = _mm512_shuffle_i32x4(t0, t4, 0x88); \
+    r1 = _mm512_shuffle_i32x4(t1, t5, 0x88); \
+    r2 = _mm512_shuffle_i32x4(t2, t6, 0x88); \
+    r3 = _mm512_shuffle_i32x4(t3, t7, 0x88); \
+    r4 = _mm512_shuffle_i32x4(t0, t4, 0xdd); \
+    r5 = _mm512_shuffle_i32x4(t1, t5, 0xdd); \
+    r6 = _mm512_shuffle_i32x4(t2, t6, 0xdd); \
+    r7 = _mm512_shuffle_i32x4(t3, t7, 0xdd); \
 
 #define XORdata16(X, index, dataAsLanes) \
-    XOReq(X##ba, LOAD_GATHER8_64(index, (dataAsLanes) +  0)); \
-    XOReq(X##be, LOAD_GATHER8_64(index, (dataAsLanes) +  1)); \
-    XOReq(X##bi, LOAD_GATHER8_64(index, (dataAsLanes) +  2)); \
-    XOReq(X##bo, LOAD_GATHER8_64(index, (dataAsLanes) +  3)); \
-    XOReq(X##bu, LOAD_GATHER8_64(index, (dataAsLanes) +  4)); \
-    XOReq(X##ga, LOAD_GATHER8_64(index, (dataAsLanes) +  5)); \
-    XOReq(X##ge, LOAD_GATHER8_64(index, (dataAsLanes) +  6)); \
-    XOReq(X##gi, LOAD_GATHER8_64(index, (dataAsLanes) +  7)); \
-    XOReq(X##go, LOAD_GATHER8_64(index, (dataAsLanes) +  8)); \
-    XOReq(X##gu, LOAD_GATHER8_64(index, (dataAsLanes) +  9)); \
-    XOReq(X##ka, LOAD_GATHER8_64(index, (dataAsLanes) + 10)); \
-    XOReq(X##ke, LOAD_GATHER8_64(index, (dataAsLanes) + 11)); \
-    XOReq(X##ki, LOAD_GATHER8_64(index, (dataAsLanes) + 12)); \
-    XOReq(X##ko, LOAD_GATHER8_64(index, (dataAsLanes) + 13)); \
-    XOReq(X##ku, LOAD_GATHER8_64(index, (dataAsLanes) + 14)); \
-    XOReq(X##ma, LOAD_GATHER8_64(index, (dataAsLanes) + 15)); \
+    LoadAndTranspose8(dataAsLanes, 0) \
+    XOReq(X##ba, r0); \
+    XOReq(X##be, r1); \
+    XOReq(X##bi, r2); \
+    XOReq(X##bo, r3); \
+    XOReq(X##bu, r4); \
+    XOReq(X##ga, r5); \
+    XOReq(X##ge, r6); \
+    XOReq(X##gi, r7); \
+    LoadAndTranspose8(dataAsLanes, 8) \
+    XOReq(X##go, r0); \
+    XOReq(X##gu, r1); \
+    XOReq(X##ka, r2); \
+    XOReq(X##ke, r3); \
+    XOReq(X##ki, r4); \
+    XOReq(X##ko, r5); \
+    XOReq(X##ku, r6); \
+    XOReq(X##ma, r7); \
 
 #define XORdata21(X, index, dataAsLanes) \
     XORdata16(X, index, dataAsLanes) \
@@ -403,6 +440,8 @@ void KangarooTwelve_AVX512_Process8Leaves(const unsigned char *input, unsigned c
     unsigned int j;
     const uint64_t *outputAsLanes = (const uint64_t *)output;
     __m256i index;
+    __m512i t0, t1, t2, t3, t4, t5, t6, t7;
+    __m512i r0, r1, r2, r3, r4, r5, r6, r7;
 
     initializeState(_);
 

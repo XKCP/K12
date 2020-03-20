@@ -26,8 +26,8 @@ void displayMeasurements1101001000(uint_32t *measurements, uint_32t *laneCounts,
 
 uint_32t measureKangarooTwelve(uint_32t dtMin, unsigned int inputLen)
 {
-    ALIGN(32) unsigned char input[2*1024*1024];
-    ALIGN(32) unsigned char output[32];
+    ALIGN(64) unsigned char input[2*1024*1024];
+    ALIGN(64) unsigned char output[32];
     measureTimingDeclare
 
     assert(inputLen <= 2*1024*1024);
