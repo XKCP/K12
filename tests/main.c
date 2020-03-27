@@ -55,7 +55,7 @@ int process(int argc, char* argv[])
         help = 1;
 
 #ifdef BENCH1GB
-    if (strcmp("--1GB", argv[1]) == 0) {
+    if (argc > 1 && strcmp("--1GB", argv[1]) == 0) {
         bench1GB();
         return 0;
     }
