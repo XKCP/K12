@@ -20,17 +20,26 @@
 #
 # void KeccakP1600_AVX512_Initialize(void *state);
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX512_Initialize
+.balign  32
+_KeccakP1600_AVX512_Initialize:
+.else
 .globl  KeccakP1600_AVX512_Initialize
 .type   KeccakP1600_AVX512_Initialize,@function
 .align  32
 KeccakP1600_AVX512_Initialize:
+.endif
     vpxorq      %zmm0,%zmm0,%zmm0
     vmovdqa64   %zmm0,0*64(%rdi)
     vmovdqa64   %zmm0,1*64(%rdi)
     vmovdqa64   %zmm0,2*64(%rdi)
     movq        $0,3*64(%rdi)
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX512_Initialize,.-KeccakP1600_AVX512_Initialize
+.endif
 
 # -----------------------------------------------------------------------------
 #
@@ -56,10 +65,16 @@ KeccakP1600_AVX512_Initialize:
 # void KeccakP1600_AVX512_AddBytes(void *state, const unsigned char *data, unsigned int offset, unsigned int length);
 #                                %rdi                         %rsi               %rdx                 %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX512_AddBytes
+.balign 32
+_KeccakP1600_AVX512_AddBytes:
+.else
 .globl  KeccakP1600_AVX512_AddBytes
 .type   KeccakP1600_AVX512_AddBytes,@function
 .align  32
 KeccakP1600_AVX512_AddBytes:
+.endif
     cmp         $0, %rcx
     jz          KeccakP1600_AVX512_AddBytes_Exit
     add            %rdx, %rdi                                # state += offset
@@ -98,17 +113,26 @@ KeccakP1600_AVX512_AddBytes_LastIncompleteLaneLoop:
     jnz         KeccakP1600_AVX512_AddBytes_LastIncompleteLaneLoop
 KeccakP1600_AVX512_AddBytes_Exit:
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX512_AddBytes,.-KeccakP1600_AVX512_AddBytes
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # void KeccakP1600_AVX512_ExtractBytes(const void *state, unsigned char *data, unsigned int offset, unsigned int length);
 #                                           %rdi                  %rsi               %rdx                 %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX512_ExtractBytes
+.balign  32
+_KeccakP1600_AVX512_ExtractBytes:
+.else
 .globl  KeccakP1600_AVX512_ExtractBytes
 .type   KeccakP1600_AVX512_ExtractBytes,@function
 .align  32
 KeccakP1600_AVX512_ExtractBytes:
+.endif
     cmp         $0, %rcx
     jz          KeccakP1600_AVX512_ExtractBytes_Exit
     add         %rdx, %rdi                              # state += offset
@@ -147,15 +171,22 @@ KeccakP1600_AVX512_ExtractBytes_LastIncompleteLaneLoop:
     jnz         KeccakP1600_AVX512_ExtractBytes_LastIncompleteLaneLoop
 KeccakP1600_AVX512_ExtractBytes_Exit:
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX512_ExtractBytes,.-KeccakP1600_AVX512_ExtractBytes
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # internal    
 #
 .text
+.ifdef macOS
+.balign  32
+.else
 .type    __KeccakF1600,@function
 .align    32
+.endif
 __KeccakF1600:
 .Loop_avx512:
     ######################################### Theta, even round
@@ -263,17 +294,26 @@ __KeccakF1600:
     dec        %eax
     jnz        .Loop_avx512
     ret
+.ifdef macOS
+.else
 .size    __KeccakF1600,.-__KeccakF1600
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # void KeccakP1600_AVX512_Permute_12rounds(void *state);
 #                                        %rdi
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX512_Permute_12rounds
+.balign  32
+_KeccakP1600_AVX512_Permute_12rounds:
+.else
 .globl  KeccakP1600_AVX512_Permute_12rounds
 .type   KeccakP1600_AVX512_Permute_12rounds,@function
 .align  32
 KeccakP1600_AVX512_Permute_12rounds:
+.endif
     lea         96(%rdi),%rdi
     lea         theta_perm(%rip),%r8
     kxnorw      %k6,%k6,%k6
@@ -319,17 +359,26 @@ KeccakP1600_AVX512_Permute_12rounds:
     vmovdqu64   %zmm4,40*4-96(%rdi){%k6}
     vzeroupper
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX512_Permute_12rounds,.-KeccakP1600_AVX512_Permute_12rounds
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen);
 #                                          %rdi                %rsi                            %rdx         %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX512_12rounds_FastLoop_Absorb
+.balign  32
+_KeccakP1600_AVX512_12rounds_FastLoop_Absorb:
+.else
 .globl  KeccakP1600_AVX512_12rounds_FastLoop_Absorb
 .type   KeccakP1600_AVX512_12rounds_FastLoop_Absorb,@function
 .align  32
 KeccakP1600_AVX512_12rounds_FastLoop_Absorb:
+.endif
     push            %rbx
     push            %r10
     shr             $3, %rcx                # rcx = data length in lanes
@@ -440,7 +489,11 @@ KeccakP1600_AVX512_FastLoop_Absorb_LanesAddLoop:
     push            %rsi
     push            %rdx
     push            %rcx
+.ifdef macOS
+    call            _KeccakP1600_AVX512_Permute_12rounds
+.else
     call            KeccakP1600_AVX512_Permute_12rounds@PLT
+.endif
     pop             %rcx
     pop             %rdx
     pop             %rsi
@@ -448,9 +501,13 @@ KeccakP1600_AVX512_FastLoop_Absorb_LanesAddLoop:
     cmp             %rsi, %rcx
     jae             KeccakP1600_AVX512_FastLoop_Absorb_LanesLoop
     jmp             KeccakP1600_AVX512_FastLoop_Absorb_Exit
+.ifdef macOS
+.balign  64
+.else
 .size   KeccakP1600_AVX512_12rounds_FastLoop_Absorb,.-KeccakP1600_AVX512_12rounds_FastLoop_Absorb
 
 .align    64
+.endif
 theta_perm:
     .quad    0, 1, 2, 3, 4, 5, 6, 7        # [not used]
     .quad    4, 0, 1, 2, 3, 5, 6, 7
