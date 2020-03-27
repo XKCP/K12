@@ -27,8 +27,8 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <fragment name="optimized64" inherits="optimized">
         <c>lib/Optimized64/KeccakP-1600-opt64.c</c>
         <h>lib/Optimized64/KeccakP-1600-SnP.h</h>
-        <c>lib/Optimized64/KeccakP-1600-AVX2.s</c>
-        <c>lib/Optimized64/KeccakP-1600-AVX512.s</c>
+        <s>lib/Optimized64/KeccakP-1600-AVX2.s</s>
+        <s>lib/Optimized64/KeccakP-1600-AVX512.s</s>
         <c gcc="-mssse3">lib/Optimized64/KeccakP-1600-timesN-SSSE3.c</c>
         <c gcc="-mavx2">lib/Optimized64/KeccakP-1600-timesN-AVX2.c</c>
         <c gcc="-mavx512f -mavx512vl">lib/Optimized64/KeccakP-1600-timesN-AVX512.c</c>
