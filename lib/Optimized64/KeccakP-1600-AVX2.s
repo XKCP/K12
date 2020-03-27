@@ -400,7 +400,10 @@ KeccakP1600_AVX2_Permute_12rounds:
     vmovdqu         %ymm6,8+32*5-96(%rdi)
     vzeroupper
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_Permute_12rounds,.-KeccakP1600_AVX2_Permute_12rounds
+.endif
 
 # -----------------------------------------------------------------------------
 #
