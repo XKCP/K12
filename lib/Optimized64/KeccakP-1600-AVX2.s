@@ -20,10 +20,16 @@
 #
 # void KeccakP1600_AVX2_Initialize(void *state);
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_Initialize
+.balign  32
+_KeccakP1600_AVX2_Initialize:
+.else
 .globl  KeccakP1600_AVX2_Initialize
 .type   KeccakP1600_AVX2_Initialize,@function
 .align  32
 KeccakP1600_AVX2_Initialize:
+.endif
     vpxor       %ymm0,%ymm0,%ymm0
     vmovdqa     %ymm0,0*32(%rdi)
     vmovdqa     %ymm0,1*32(%rdi)
@@ -33,17 +39,26 @@ KeccakP1600_AVX2_Initialize:
     vmovdqa     %ymm0,5*32(%rdi)
     movq        $0,6*32(%rdi)
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_Initialize,.-KeccakP1600_AVX2_Initialize
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # void KeccakP1600_AVX2_AddByte(void *state, unsigned char data, unsigned int offset);
 #                                %rdi                 %rsi               %rdx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_AddByte
+.balign 32
+_KeccakP1600_AVX2_AddByte:
+.else
 .globl  KeccakP1600_AVX2_AddByte
 .type   KeccakP1600_AVX2_AddByte,@function
 .align  32
 KeccakP1600_AVX2_AddByte:
+.endif
     mov         %rdx, %rax
     and         $7, %rax
     and         $0xFFFFFFF8, %edx
@@ -53,17 +68,26 @@ KeccakP1600_AVX2_AddByte:
     add         %rax, %rdi
     xorb        %sil, (%rdi)
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_AddByte,.-KeccakP1600_AVX2_AddByte
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # void KeccakP1600_AVX2_AddBytes(void *state, const unsigned char *data, unsigned int offset, unsigned int length);
 #                                %rdi                         %rsi               %rdx                 %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_AddBytes
+.balign 32
+_KeccakP1600_AVX2_AddBytes:
+.else
 .globl  KeccakP1600_AVX2_AddBytes
 .type   KeccakP1600_AVX2_AddBytes,@function
 .align  32
 KeccakP1600_AVX2_AddBytes:
+.endif
     cmp         $0, %rcx
     jz          KeccakP1600_AVX2_AddBytes_Exit
     mov         %rdx, %rax                              # rax offset in lane
@@ -112,17 +136,26 @@ KeccakP1600_AVX2_AddBytes_LastIncompleteLaneLoop:
     jnz         KeccakP1600_AVX2_AddBytes_LastIncompleteLaneLoop
 KeccakP1600_AVX2_AddBytes_Exit:
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_AddBytes,.-KeccakP1600_AVX2_AddBytes
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # void KeccakP1600_AVX2_ExtractBytes(const void *state, unsigned char *data, unsigned int offset, unsigned int length);
 #                                           %rdi                  %rsi               %rdx                 %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_ExtractBytes
+.balign  32
+_KeccakP1600_AVX2_ExtractBytes:
+.else
 .globl  KeccakP1600_AVX2_ExtractBytes
 .type   KeccakP1600_AVX2_ExtractBytes,@function
 .align  32
 KeccakP1600_AVX2_ExtractBytes:
+.endif
     push        %rbx
     cmp         $0, %rcx
     jz          KeccakP1600_AVX2_ExtractBytes_Exit
@@ -174,14 +207,21 @@ KeccakP1600_AVX2_ExtractBytes_LastIncompleteLaneLoop:
 KeccakP1600_AVX2_ExtractBytes_Exit:
     pop         %rbx
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_ExtractBytes,.-KeccakP1600_AVX2_ExtractBytes
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # internal    
 #
+.ifdef macOS
+.balign  32
+.else
 .type    __KeccakF1600,@function
 .align    32
+.endif
 __KeccakF1600:
 .Loop_avx2:
     ######################################### Theta
@@ -320,14 +360,23 @@ __KeccakF1600:
     dec         %eax
     jnz         .Loop_avx2
     ret
+.ifdef macOS
+.else
 .size   __KeccakF1600,.-__KeccakF1600
+.endif
 
 
 
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_Permute_12rounds
+.balign  32
+_KeccakP1600_AVX2_Permute_12rounds:
+.else
 .globl  KeccakP1600_AVX2_Permute_12rounds
 .type   KeccakP1600_AVX2_Permute_12rounds,@function
 .align  32
 KeccakP1600_AVX2_Permute_12rounds:
+.endif
     lea             rhotates_left+96(%rip),%r8
     lea             rhotates_right+96(%rip),%r9
     lea             iotas+12*4*8(%rip),%r10
@@ -351,17 +400,26 @@ KeccakP1600_AVX2_Permute_12rounds:
     vmovdqu         %ymm6,8+32*5-96(%rdi)
     vzeroupper
     ret
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_Permute_12rounds,.-KeccakP1600_AVX2_Permute_12rounds
+.endif
 
 # -----------------------------------------------------------------------------
 #
 # size_t KeccakP1600_AVX2_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen);
 #                                          %rdi                %rsi                            %rdx         %rcx
 #
+.ifdef macOS
+.globl  _KeccakP1600_AVX2_12rounds_FastLoop_Absorb
+.balign  32
+_KeccakP1600_AVX2_12rounds_FastLoop_Absorb:
+.else
 .globl  KeccakP1600_AVX2_12rounds_FastLoop_Absorb
 .type   KeccakP1600_AVX2_12rounds_FastLoop_Absorb,@function
 .align  32
 KeccakP1600_AVX2_12rounds_FastLoop_Absorb:
+.endif
     push            %rbx
     push            %r10
     shr             $3, %rcx                # rcx = data length in lanes
@@ -512,7 +570,11 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_LanesAddLoop:
     push            %rsi
     push            %rdx
     push            %rcx
+.ifdef macOS
+    call            _KeccakP1600_AVX2_Permute_12rounds
+.else
     call            KeccakP1600_AVX2_Permute_12rounds@PLT
+.endif
     pop             %rcx
     pop             %rdx
     pop             %rsi
@@ -520,11 +582,18 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_LanesAddLoop:
     cmp             %rsi, %rcx
     jae             KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Not17Lanes
     jmp             KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Exit
+.ifdef macOS
+.else
 .size   KeccakP1600_AVX2_12rounds_FastLoop_Absorb,.-KeccakP1600_AVX2_12rounds_FastLoop_Absorb
+.endif
 
 .equ    ALLON,        0xFFFFFFFFFFFFFFFF
 
+.ifdef macOS
+.balign  64
+.else
 .align    64
+.endif
 rhotates_left:
     .quad     3,   18,    36,    41         # [2][0] [4][0] [1][0] [3][0]
     .quad     1,   62,    28,    27         # [0][1] [0][2] [0][3] [0][4]
@@ -572,7 +641,11 @@ mapState:
     .quad     8*8,  9*8, 18*8, 23*8, 16*8
     .quad     6*8, 17*8, 14*8, 11*8, 24*8
 
+.ifdef macOS
+    .balign   16
+.else
     .align   16
+.endif
 map2:
     .long    10*8, 20*8,  5*8, 15*8
 map3:
@@ -584,7 +657,11 @@ map5:
 map6:
     .long     6*8, 12*8, 18*8, 24*8
 
+.ifdef macOS
+    .balign   32
+.else
     .align   32
+.endif
 mask3_21:
     .quad    ALLON, ALLON,     0, ALLON
 mask4_21:
