@@ -15,6 +15,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "align.h"
 #include "KangarooTwelve.h"
 #include "testKangarooTwelve.h"
 #include "testPerformance.h"

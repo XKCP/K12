@@ -9,9 +9,11 @@ and related or neighboring rights to the source code in this file.
 http://creativecommons.org/publicdomain/zero/1.0/
 */
 
+#include <assert.h>
 #include <string.h>
-#include <stdint.h>
+#include "align.h"
 #include "KangarooTwelve.h"
+#include "KeccakP-1600-SnP.h"
 
 void KangarooTwelve_SetProcessorCapabilities(void);
 int K12_SSSE3_requested_disabled = 0;
@@ -21,31 +23,36 @@ int K12_enableSSSE3 = 0;
 int K12_enableAVX2 = 0;
 int K12_enableAVX512 = 0;
 
-int KeccakWidth1600_12rounds_SpongeInitialize(KeccakWidth1600_12rounds_SpongeInstance *instance, unsigned int rate, unsigned int capacity)
-{
-    if (rate+capacity != 1600)
-        return 1;
-    if ((rate <= 0) || (rate > 1600) || ((rate % 8) != 0))
-        return 1;
-    KeccakP1600_Initialize(instance->state);
-    instance->rate = rate;
-    instance->byteIOIndex = 0;
-    instance->squeezing = 0;
-
-    return 0;
-}
-
 /* ---------------------------------------------------------------- */
 
-int KeccakWidth1600_12rounds_SpongeAbsorb(KeccakWidth1600_12rounds_SpongeInstance *instance, const unsigned char *data, size_t dataByteLen)
+ALIGN(KeccakP1600_stateAlignment) typedef struct Opaque_KangarooTwelve_FStruct {
+    uint8_t state[KeccakP1600_stateSizeInBytes];
+    uint8_t byteIOIndex;
+    uint8_t squeezing;
+} Opaque_KangarooTwelve_F;
+
+#define K12_security        128
+#define K12_capacity        (2*K12_security)
+#define K12_capacityInBytes (K12_capacity/8)
+#define K12_rate            (1600-K12_capacity)
+#define K12_rateInBytes     (K12_rate/8)
+#define K12_rateInLanes     (K12_rate/64)
+
+static void KangarooTwelve_F_Initialize(Opaque_KangarooTwelve_F *instance)
+{
+    KeccakP1600_Initialize(instance->state);
+    instance->byteIOIndex = 0;
+    instance->squeezing = 0;
+}
+
+static void KangarooTwelve_F_Absorb(Opaque_KangarooTwelve_F *instance, const unsigned char *data, size_t dataByteLen)
 {
     size_t i, j;
-    unsigned int partialBlock;
+    uint8_t partialBlock;
     const unsigned char *curData;
-    unsigned int rateInBytes = instance->rate/8;
+    const uint8_t rateInBytes = K12_rateInBytes;
 
-    if (instance->squeezing)
-        return 1; /* Too late for additional input */
+    assert(instance->squeezing == 0);
 
     i = 0;
     curData = data;
@@ -53,29 +60,23 @@ int KeccakWidth1600_12rounds_SpongeAbsorb(KeccakWidth1600_12rounds_SpongeInstanc
         if ((instance->byteIOIndex == 0) && (dataByteLen >= (i + rateInBytes))) {
 #ifdef KeccakP1600_12rounds_FastLoop_supported
             /* processing full blocks first */
-            if ((rateInBytes % (1600/200)) == 0) {
-                /* fast lane: whole lane rate */
-                j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, rateInBytes/(1600/200), curData, dataByteLen - i);
-                i += j;
-                curData += j;
-            }
-            else {
+            j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, K12_rateInLanes, curData, dataByteLen - i);
+            i += j;
+            curData += j;
 #endif
-                for(j=dataByteLen-i; j>=rateInBytes; j-=rateInBytes) {
-                    KeccakP1600_AddBytes(instance->state, curData, 0, rateInBytes);
-                    KeccakP1600_Permute_12rounds(instance->state);
-                    curData+=rateInBytes;
-                }
-                i = dataByteLen - j;
-#ifdef KeccakP1600_12rounds_FastLoop_supported
+            for(j=dataByteLen-i; j>=rateInBytes; j-=rateInBytes) {
+                KeccakP1600_AddBytes(instance->state, curData, 0, rateInBytes);
+                KeccakP1600_Permute_12rounds(instance->state);
+                curData+=rateInBytes;
             }
-#endif
+            i = dataByteLen - j;
         }
         else {
             /* normal lane: using the message queue */
-            partialBlock = (unsigned int)(dataByteLen - i);
-            if (partialBlock+instance->byteIOIndex > rateInBytes)
+            if ((dataByteLen - i) + instance->byteIOIndex > (size_t)rateInBytes)
                 partialBlock = rateInBytes-instance->byteIOIndex;
+            else
+                partialBlock = (uint8_t)(dataByteLen - i);
             i += partialBlock;
 
             KeccakP1600_AddBytes(instance->state, curData, instance->byteIOIndex, partialBlock);
@@ -87,19 +88,14 @@ int KeccakWidth1600_12rounds_SpongeAbsorb(KeccakWidth1600_12rounds_SpongeInstanc
             }
         }
     }
-    return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
-int KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(KeccakWidth1600_12rounds_SpongeInstance *instance, unsigned char delimitedData)
+static void KangarooTwelve_F_AbsorbLastFewBits(Opaque_KangarooTwelve_F *instance, unsigned char delimitedData)
 {
-    unsigned int rateInBytes = instance->rate/8;
+    const unsigned int rateInBytes = K12_rateInBytes;
 
-    if (delimitedData == 0)
-        return 1;
-    if (instance->squeezing)
-        return 1; /* Too late for additional input */
+    assert(delimitedData != 0);
+    assert(instance->squeezing == 0);
 
     /* Last few bits, whose delimiter coincides with first bit of padding */
     KeccakP1600_AddByte(instance->state, delimitedData, instance->byteIOIndex);
@@ -111,20 +107,17 @@ int KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(KeccakWidth1600_12rounds_Sp
     KeccakP1600_Permute_12rounds(instance->state);
     instance->byteIOIndex = 0;
     instance->squeezing = 1;
-    return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
-int KeccakWidth1600_12rounds_SpongeSqueeze(KeccakWidth1600_12rounds_SpongeInstance *instance, unsigned char *data, size_t dataByteLen)
+static void KangarooTwelve_F_Squeeze(Opaque_KangarooTwelve_F *instance, unsigned char *data, size_t dataByteLen)
 {
     size_t i, j;
     unsigned int partialBlock;
-    unsigned int rateInBytes = instance->rate/8;
+    const unsigned int rateInBytes = K12_rateInBytes;
     unsigned char *curData;
 
     if (!instance->squeezing)
-        KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(instance, 0x01);
+        KangarooTwelve_F_AbsorbLastFewBits(instance, 0x01);
 
     i = 0;
     curData = data;
@@ -153,19 +146,64 @@ int KeccakWidth1600_12rounds_SpongeSqueeze(KeccakWidth1600_12rounds_SpongeInstan
             instance->byteIOIndex += partialBlock;
         }
     }
-    return 0;
 }
 
 /* ---------------------------------------------------------------- */
 
-#define chunkSize       8192
-#define laneSize        8
-#define suffixLeaf      0x0B /* '110': message hop, simple padding, inner node */
+typedef enum {
+    NOT_INITIALIZED,
+    ABSORBING,
+    FINAL,
+    SQUEEZING
+} KCP_Phases;
+typedef KCP_Phases KangarooTwelve_Phases;
 
-#define security        128
-#define capacity        (2*security)
-#define capacityInBytes (capacity/8)
-#define rate            (1600-capacity)
+typedef struct {
+    Opaque_KangarooTwelve_F queueNode;
+    Opaque_KangarooTwelve_F finalNode;
+    size_t fixedOutputLength;
+    size_t blockNumber;
+    size_t queueAbsorbedLen;
+    KangarooTwelve_Phases phase;
+} Opaque_KangarooTwelve_Instance;
+
+static void importF(Opaque_KangarooTwelve_F *internal_Instance, const KangarooTwelve_F *external_Instance)
+{
+    KeccakP1600_Initialize(internal_Instance->state);
+    KeccakP1600_AddBytes(internal_Instance->state, external_Instance->state, 0, 200);
+    internal_Instance->byteIOIndex = external_Instance->byteIOIndex;
+    internal_Instance->squeezing = external_Instance->squeezing;
+}
+
+static void exportF(KangarooTwelve_F *external_Instance, const Opaque_KangarooTwelve_F *internal_Instance)
+{
+    KeccakP1600_ExtractBytes(internal_Instance->state, external_Instance->state, 0, 200);
+    external_Instance->byteIOIndex = (uint8_t)internal_Instance->byteIOIndex;
+    external_Instance->squeezing = (uint8_t)internal_Instance->squeezing;
+}
+
+static void import(Opaque_KangarooTwelve_Instance *internal_Instance, const KangarooTwelve_Instance *external_Instance)
+{
+    importF(&internal_Instance->queueNode, &external_Instance->queueNode);
+    importF(&internal_Instance->finalNode, &external_Instance->finalNode);
+    internal_Instance->fixedOutputLength = external_Instance->fixedOutputLength;
+    internal_Instance->blockNumber = external_Instance->blockNumber;
+    internal_Instance->queueAbsorbedLen = external_Instance->queueAbsorbedLen;
+    internal_Instance->phase = (KangarooTwelve_Phases)external_Instance->phase;
+}
+
+static void export(KangarooTwelve_Instance *external_Instance, const Opaque_KangarooTwelve_Instance *internal_Instance)
+{
+    exportF(&external_Instance->queueNode, &internal_Instance->queueNode);
+    exportF(&external_Instance->finalNode, &internal_Instance->finalNode);
+    external_Instance->fixedOutputLength = internal_Instance->fixedOutputLength;
+    external_Instance->blockNumber = internal_Instance->blockNumber;
+    external_Instance->queueAbsorbedLen = internal_Instance->queueAbsorbedLen;
+    external_Instance->phase = (int)internal_Instance->phase;
+}
+
+#define K12_chunkSize       8192
+#define K12_suffixLeaf      0x0B /* '110': message hop, simple padding, inner node */
 
 #ifndef KeccakP1600_disableParallelism
 
@@ -255,14 +293,14 @@ void KangarooTwelve_Process8Leaves(const unsigned char *input, unsigned char *ou
 }
 
 #define ProcessLeaves( Parallellism ) \
-    while ( inLen >= Parallellism * chunkSize ) { \
-        unsigned char intermediate[Parallellism*capacityInBytes]; \
+    while ( inLen >= Parallellism * K12_chunkSize ) { \
+        unsigned char intermediate[Parallellism*K12_capacityInBytes]; \
         \
         KangarooTwelve_Process##Parallellism##Leaves(input, intermediate); \
-        input += Parallellism * chunkSize; \
-        inLen -= Parallellism * chunkSize; \
+        input += Parallellism * K12_chunkSize; \
+        inLen -= Parallellism * K12_chunkSize; \
         ktInstance->blockNumber += Parallellism; \
-        if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, intermediate, Parallellism * capacityInBytes) != 0) return 1; \
+        KangarooTwelve_F_Absorb(&ktInstance->finalNode, intermediate, Parallellism * K12_capacityInBytes); \
     }
 
 #endif
@@ -280,57 +318,60 @@ static unsigned int right_encode( unsigned char * encbuf, size_t value )
     return n + 1;
 }
 
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputLen)
+static void K12_internal_Initialize(Opaque_KangarooTwelve_Instance *ktInstance, size_t outputLen)
 {
     KangarooTwelve_SetProcessorCapabilities();
     ktInstance->fixedOutputLength = outputLen;
     ktInstance->queueAbsorbedLen = 0;
     ktInstance->blockNumber = 0;
     ktInstance->phase = ABSORBING;
-    return KeccakWidth1600_12rounds_SpongeInitialize(&ktInstance->finalNode, rate, capacity);
+    KangarooTwelve_F_Initialize(&ktInstance->finalNode);
 }
 
-int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inLen)
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen)
+{
+    Opaque_KangarooTwelve_Instance internal;
+
+    K12_internal_Initialize(&internal, outputByteLen);
+    export(ktInstance, &internal);
+    return 0;
+}
+
+static int K12_internal_Update(Opaque_KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inLen)
 {
     if (ktInstance->phase != ABSORBING)
         return 1;
 
     if ( ktInstance->blockNumber == 0 ) {
         /* First block, absorb in final node */
-        unsigned int len = (inLen < (chunkSize - ktInstance->queueAbsorbedLen)) ? inLen : (chunkSize - ktInstance->queueAbsorbedLen);
-        if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, input, len) != 0)
-            return 1;
+        unsigned int len = (inLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? inLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
+        KangarooTwelve_F_Absorb(&ktInstance->finalNode, input, len);
         input += len;
         inLen -= len;
         ktInstance->queueAbsorbedLen += len;
-        if ( (ktInstance->queueAbsorbedLen == chunkSize) && (inLen != 0) ) {
+        if ( (ktInstance->queueAbsorbedLen == K12_chunkSize) && (inLen != 0) ) {
             /* First block complete and more input data available, finalize it */
             const unsigned char padding = 0x03; /* '110^6': message hop, simple padding */
             ktInstance->queueAbsorbedLen = 0;
             ktInstance->blockNumber = 1;
-            if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, &padding, 1) != 0)
-                return 1;
+            KangarooTwelve_F_Absorb(&ktInstance->finalNode, &padding, 1);
             ktInstance->finalNode.byteIOIndex = (ktInstance->finalNode.byteIOIndex + 7) & ~7; /* Zero padding up to 64 bits */
         }
     }
     else if ( ktInstance->queueAbsorbedLen != 0 ) {
         /* There is data in the queue, absorb further in queue until block complete */
-        unsigned int len = (inLen < (chunkSize - ktInstance->queueAbsorbedLen)) ? inLen : (chunkSize - ktInstance->queueAbsorbedLen);
-        if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->queueNode, input, len) != 0)
-            return 1;
+        unsigned int len = (inLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? inLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
+        KangarooTwelve_F_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inLen -= len;
         ktInstance->queueAbsorbedLen += len;
-        if ( ktInstance->queueAbsorbedLen == chunkSize ) {
-            unsigned char intermediate[capacityInBytes];
+        if ( ktInstance->queueAbsorbedLen == K12_chunkSize ) {
+            unsigned char intermediate[K12_capacityInBytes];
             ktInstance->queueAbsorbedLen = 0;
             ++ktInstance->blockNumber;
-            if (KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(&ktInstance->queueNode, suffixLeaf) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeSqueeze(&ktInstance->queueNode, intermediate, capacityInBytes) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, intermediate, capacityInBytes) != 0)
-                return 1;
+            KangarooTwelve_F_AbsorbLastFewBits(&ktInstance->queueNode, K12_suffixLeaf);
+            KangarooTwelve_F_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
+            KangarooTwelve_F_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
         }
     }
 
@@ -349,22 +390,17 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
 #endif
 
     while ( inLen > 0 ) {
-        unsigned int len = (inLen < chunkSize) ? inLen : chunkSize;
-        if (KeccakWidth1600_12rounds_SpongeInitialize(&ktInstance->queueNode, rate, capacity) != 0)
-            return 1;
-        if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->queueNode, input, len) != 0)
-            return 1;
+        unsigned int len = (inLen < K12_chunkSize) ? inLen : K12_chunkSize;
+        KangarooTwelve_F_Initialize(&ktInstance->queueNode);
+        KangarooTwelve_F_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inLen -= len;
-        if ( len == chunkSize ) {
-            unsigned char intermediate[capacityInBytes];
+        if ( len == K12_chunkSize ) {
+            unsigned char intermediate[K12_capacityInBytes];
             ++ktInstance->blockNumber;
-            if (KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(&ktInstance->queueNode, suffixLeaf) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeSqueeze(&ktInstance->queueNode, intermediate, capacityInBytes) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, intermediate, capacityInBytes) != 0)
-                return 1;
+            KangarooTwelve_F_AbsorbLastFewBits(&ktInstance->queueNode, K12_suffixLeaf);
+            KangarooTwelve_F_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
+            KangarooTwelve_F_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
         }
         else
             ktInstance->queueAbsorbedLen = len;
@@ -373,7 +409,18 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
     return 0;
 }
 
-int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char * output, const unsigned char * customization, size_t customLen)
+int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen)
+{
+    Opaque_KangarooTwelve_Instance internal;
+    int result;
+
+    import(&internal, ktInstance);
+    result = K12_internal_Update(&internal, input, inputByteLen);
+    export(ktInstance, &internal);
+    return result;
+}
+
+static int K12_internal_Final(Opaque_KangarooTwelve_Instance *ktInstance, unsigned char * output, const unsigned char * customization, size_t customLen)
 {
     unsigned char encbuf[sizeof(size_t)+1+2];
     unsigned char padding;
@@ -382,9 +429,9 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char * ou
         return 1;
 
     /* Absorb customization | right_encode(customLen) */
-    if ((customLen != 0) && (KangarooTwelve_Update(ktInstance, customization, customLen) != 0))
+    if ((customLen != 0) && (K12_internal_Update(ktInstance, customization, customLen) != 0))
         return 1;
-    if (KangarooTwelve_Update(ktInstance, encbuf, right_encode(encbuf, customLen)) != 0)
+    if (K12_internal_Update(ktInstance, encbuf, right_encode(encbuf, customLen)) != 0)
         return 1;
 
     if ( ktInstance->blockNumber == 0 ) {
@@ -396,52 +443,72 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char * ou
 
         if ( ktInstance->queueAbsorbedLen != 0 ) {
             /* There is data in the queue node */
-            unsigned char intermediate[capacityInBytes];
+            unsigned char intermediate[K12_capacityInBytes];
             ++ktInstance->blockNumber;
-            if (KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(&ktInstance->queueNode, suffixLeaf) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeSqueeze(&ktInstance->queueNode, intermediate, capacityInBytes) != 0)
-                return 1;
-            if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, intermediate, capacityInBytes) != 0)
-                return 1;
+            KangarooTwelve_F_AbsorbLastFewBits(&ktInstance->queueNode, K12_suffixLeaf);
+            KangarooTwelve_F_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
+            KangarooTwelve_F_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
         }
         --ktInstance->blockNumber; /* Absorb right_encode(number of Chaining Values) || 0xFF || 0xFF */
         n = right_encode(encbuf, ktInstance->blockNumber);
         encbuf[n++] = 0xFF;
         encbuf[n++] = 0xFF;
-        if (KeccakWidth1600_12rounds_SpongeAbsorb(&ktInstance->finalNode, encbuf, n) != 0)
-            return 1;
+        KangarooTwelve_F_Absorb(&ktInstance->finalNode, encbuf, n);
         padding = 0x06; /* '01': chaining hop, final node */
     }
-    if (KeccakWidth1600_12rounds_SpongeAbsorbLastFewBits(&ktInstance->finalNode, padding) != 0)
-        return 1;
+    KangarooTwelve_F_AbsorbLastFewBits(&ktInstance->finalNode, padding);
     if ( ktInstance->fixedOutputLength != 0 ) {
         ktInstance->phase = FINAL;
-        return KeccakWidth1600_12rounds_SpongeSqueeze(&ktInstance->finalNode, output, ktInstance->fixedOutputLength);
+        KangarooTwelve_F_Squeeze(&ktInstance->finalNode, output, ktInstance->fixedOutputLength);
+        return 0;
     }
     ktInstance->phase = SQUEEZING;
     return 0;
 }
 
-int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char * output, size_t outputLen)
+int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen)
+{
+    Opaque_KangarooTwelve_Instance internal;
+    int result;
+
+    import(&internal, ktInstance);
+    result = K12_internal_Final(&internal, output, customization, customByteLen);
+    export(ktInstance, &internal);
+    return result;
+}
+
+static int K12_internal_Squeeze(Opaque_KangarooTwelve_Instance *ktInstance, unsigned char * output, size_t outputLen)
 {
     if (ktInstance->phase != SQUEEZING)
         return 1;
-    return KeccakWidth1600_12rounds_SpongeSqueeze(&ktInstance->finalNode, output, outputLen);
+    KangarooTwelve_F_Squeeze(&ktInstance->finalNode, output, outputLen);
+    return 0;
+}
+
+int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *output, size_t outputByteLen)
+{
+    Opaque_KangarooTwelve_Instance internal;
+    int result;
+
+    import(&internal, ktInstance);
+    result = K12_internal_Squeeze(&internal, output, outputByteLen);
+    export(ktInstance, &internal);
+    return result;
 }
 
 int KangarooTwelve( const unsigned char * input, size_t inLen, unsigned char * output, size_t outLen, const unsigned char * customization, size_t customLen )
 {
-    KangarooTwelve_Instance ktInstance;
+    Opaque_KangarooTwelve_Instance ktInstance;
 
     if (outLen == 0)
         return 1;
-    if (KangarooTwelve_Initialize(&ktInstance, outLen) != 0)
+    K12_internal_Initialize(&ktInstance, outLen);
+    if (K12_internal_Update(&ktInstance, input, inLen) != 0)
         return 1;
-    if (KangarooTwelve_Update(&ktInstance, input, inLen) != 0)
-        return 1;
-    return KangarooTwelve_Final(&ktInstance, output, customization, customLen);
+    return K12_internal_Final(&ktInstance, output, customization, customLen);
 }
+
+/* ---------------------------------------------------------------- */
 
 /* Processor capability detection code by Samuel Neves and Jack O'Connor, see
  * https://github.com/BLAKE3-team/BLAKE3/blob/master/c/blake3_dispatch.c

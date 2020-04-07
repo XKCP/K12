@@ -15,7 +15,9 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "align.h"
 #include "KangarooTwelve.h"
+#include "KeccakP-1600-SnP.h"
 #include "timing.h"
 #include "testPerformance.h"
 

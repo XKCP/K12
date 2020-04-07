@@ -10,6 +10,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 */
 
 #include "KangarooTwelve.h"
+#include "KeccakP-1600-SnP.h"
 
 /* #define OUTPUT */
 /* #define VERBOSE */
@@ -24,6 +25,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #if (defined(OUTPUT) || defined(VERBOSE) || !defined(EMBEDDED))
 #include <stdio.h>
 #endif
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -307,6 +309,36 @@ void printKangarooTwelveTestVectors()
     }
 }
 
+#ifndef KeccakP1600_disableParallelism
+void testKangarooTwelveWithChangingCpuFeatures()
+{
+    uint8_t M[289];
+    uint8_t output[32];
+    const size_t l = 289;
+    const uint8_t expected[32] = {
+        0x0c, 0x31, 0x5e, 0xbc, 0xde, 0xdb, 0xf6, 0x14, 0x26, 0xde, 0x7d, 0xcf, 0x8f, 0xb7, 0x25, 0xd1,
+        0xe7, 0x46, 0x75, 0xd7, 0xf5, 0x32, 0x7a, 0x50, 0x67, 0xf3, 0x67, 0xb1, 0x08, 0xec, 0xb6, 0x7c };
+    KangarooTwelve_Instance k12;
+
+    printf("\n * Testing KangarooTwelve interleaved with changing CPU features\n");
+    for(size_t j=0; j<l; j++)
+        M[j] = j%251;
+    KangarooTwelve_Initialize(&k12, 32);
+    for(size_t j=0; j<l; j++) {
+        // Pseudo-randomly switch on/off the CPU features
+        uint8_t features = expected[j % 32] ^ M[j];
+        KangarooTwelve_EnableAllCpuFeatures();
+        if (features & 1) KangarooTwelve_DisableAVX512();
+        if (features & 2) KangarooTwelve_DisableAVX2();
+        if (features & 4) KangarooTwelve_DisableSSSE3();
+        KangarooTwelve_Update(&k12, &M[j], 1);
+    }
+    KangarooTwelve_Final(&k12, output, "", 0);
+    assert(memcmp(expected, output, 32) == 0);
+    printf("   - OK\n");
+}
+#endif
+
 void testKangarooTwelve(void)
 {
 #ifdef OUTPUT
@@ -349,5 +381,8 @@ void testKangarooTwelve(void)
         KangarooTwelve_EnableAllCpuFeatures();
         selfTestKangarooTwelve(checksum);
     }
+
+    // Test with changing features
+    testKangarooTwelveWithChangingCpuFeatures();
 #endif
 }
