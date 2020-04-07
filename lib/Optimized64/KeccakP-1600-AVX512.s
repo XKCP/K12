@@ -10,9 +10,7 @@
 # Andy Polyakov's keccak1600-avx512.pl from the CRYPTOGAMS project
 # (https://github.com/dot-asm/cryptogams/blob/master/x86_64/keccak1600-avx512.pl).
 # The rest of the code was written by Ronny Van Keer.
-
-# This directive is unsupported by clang.
-# .arch .avx512f
+# Adaptations for macOS by Stéphane Léon.
 
 .text
 
