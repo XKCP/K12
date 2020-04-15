@@ -61,6 +61,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <c>tests/testKangarooTwelve.c</c>
         <h>tests/testKangarooTwelve.h</h>
         <gcc>-lm</gcc>
+        <gcc>-DKeccakP1600_enable_simd_options</gcc>
     </fragment>
 
     <!-- To make a library -->

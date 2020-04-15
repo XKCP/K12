@@ -19,9 +19,11 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 #include <stddef.h>
 #include <stdint.h>
+#include "align.h"
+#include "KeccakP-1600-SnP.h"
 
-typedef struct KangarooTwelve_FStruct {
-    uint8_t state[200];
+ALIGN(KeccakP1600_stateAlignment) typedef struct KangarooTwelve_FStruct {
+    uint8_t state[KeccakP1600_stateSizeInBytes];
     uint8_t byteIOIndex;
     uint8_t squeezing;
 } KangarooTwelve_F;
@@ -44,7 +46,7 @@ typedef struct KangarooTwelve_InstanceStruct {
   * @param  customByteLen   The length of the customization string in bytes.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen );
+int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen);
 
 /**
   * Function to initialize a KangarooTwelve instance.
@@ -89,18 +91,32 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
   */
 int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *output, size_t outputByteLen);
 
-#ifndef KeccakP1600_disableParallelism
+#if !defined(KeccakP1600_disableParallelism) && defined(KeccakP1600_enable_simd_options)
 /**
   * Functions to selectively disable the use of CPU features. Should be rarely
   * needed; if you're not sure this is what you want, don't worry about it.
   *
-  * This can be useful in an environment where it is detrimental to online large
-  * vector units on the CPU, since doing so can lead to downclocking,
-  * performance hits in other threads sharing the same CPU core, and short
-  * delays while the CPU's power license is increased to online the vector unit.
+  * /!\ WARNING /!\: Calling these functions REQUIRES that there are no
+  * KangarooTwelve instances in use. The effects are global and affect the code
+  * paths taken by every call, as well as the details of the represented states.
+  * Calling these functions in the middle of your program (as opposed to during
+  * setup) is PROBABLY WRONG.
+  *
+  * These functions are at present only used to increase test suite coverage,
+  * and demonstrate comparative performance between implementations in different
+  * instruction sets. To enable them, the macro KeccakP1600_enable_simd_options
+  * must be defined at compile time.
+  *
+  * They can potentially also be useful in an environment where it is
+  * detrimental to online large vector units on the CPU, since doing so can lead
+  * to downclocking, performance hits in other threads sharing the same CPU
+  * core, and short delays while the CPU's power license is increased to online
+  * the vector unit.
+  *
   * In the majority of situations, however, this should rarely matter and it is
-  * often the case that the performance difference will be a wash or even an
+  * usually the case that the performance difference will be a wash or even an
   * overall improvement despite the downsides.
+  *
   * @return 1 if the feature was enabled and available and has been turned off,
   *     0 if it was already disabled or unavailable.
   */
@@ -113,6 +129,6 @@ int KangarooTwelve_DisableSSSE3(void);
   * always has no effect if no CPU features have been explicitly disabled.
   */
 void KangarooTwelve_EnableAllCpuFeatures(void);
-#endif  // KeccakP1600_disableParallelism
+#endif  // !KeccakP1600_disableParallelism && KeccakP1600_enable_simd_options
 
 #endif
