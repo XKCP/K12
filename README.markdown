@@ -51,7 +51,16 @@ This creates a `.tar.gz` archive with all the necessary files to build the given
 
 The list of targets can be found at the end of [`Makefile.build`](Makefile.build) or by running `make` without parameters.
 
-For Microsoft Visual Studio support and other details, please refer to the [XKCP][xkcp].
+## Microsoft Visual Studio support
+
+KangarooTwelve can be compiled with Microsoft Visual Studio (MSVC). The XKCP build system offers support for the creation of project files. To get a project file for a given target, simply append `.vcxproj` to the target name, e.g.,
+
+```
+make generic64noAsm/K12Tests.vcxproj
+```
+
+The targets `generic32` and `generic64noAsm` can be used with MSVC, but not `generic64` as it contains assembly implementations in the GCC syntax, which at this point cannot be used with MSVC.
+Please refer to the documention of [XKCP][xkcp] for more details on the limitations of the support of MSVC.
 
 [k12]: https://keccak.team/kangarootwelve.html
 [xkcp]: https://github.com/XKCP/XKCP

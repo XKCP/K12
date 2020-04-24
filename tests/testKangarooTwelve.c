@@ -335,7 +335,7 @@ void testKangarooTwelve(void)
     writeTestKangarooTwelve("KangarooTwelve.txt");
 #endif
 
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     // Read feature availability
     KangarooTwelve_EnableAllCpuFeatures();
     int cpu_has_AVX512 = KangarooTwelve_DisableAVX512();
@@ -347,7 +347,7 @@ void testKangarooTwelve(void)
 #endif
     selfTestKangarooTwelve();
 
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     // Test with SSSE3 only if it's available
     if (cpu_has_SSSE3) {
         printf("\n * Testing with SSSE3 enabled:\n");

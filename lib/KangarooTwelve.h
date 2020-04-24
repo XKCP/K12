@@ -33,7 +33,7 @@ typedef struct KangarooTwelve_InstanceStruct {
     KangarooTwelve_F finalNode;
     size_t fixedOutputLength;
     size_t blockNumber;
-    size_t queueAbsorbedLen;
+    unsigned int queueAbsorbedLen;
     int phase;
 } KangarooTwelve_Instance;
 

@@ -298,7 +298,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
 
     if (ktInstance->blockNumber == 0) {
         /* First block, absorb in final node */
-        unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
+        unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? (unsigned int)inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
         KangarooTwelve_F_Absorb(&ktInstance->finalNode, input, len);
         input += len;
         inputByteLen -= len;
@@ -313,7 +313,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
         }
     } else if (ktInstance->queueAbsorbedLen != 0) {
         /* There is data in the queue, absorb further in queue until block complete */
-        unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
+        unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? (unsigned int)inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
         KangarooTwelve_F_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inputByteLen -= len;
@@ -343,7 +343,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
 #endif
 
     while (inputByteLen > 0) {
-        unsigned int len = (inputByteLen < K12_chunkSize) ? inputByteLen : K12_chunkSize;
+        unsigned int len = (inputByteLen < K12_chunkSize) ? (unsigned int)inputByteLen : K12_chunkSize;
         KangarooTwelve_F_Initialize(&ktInstance->queueNode);
         KangarooTwelve_F_Absorb(&ktInstance->queueNode, input, len);
         input += len;

@@ -32,9 +32,11 @@ const char * KeccakP1600_GetImplementation()
     if (K12_enableAVX512)
         return "AVX-512 implementation";
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         return "AVX2 implementation";
     else
+#endif
         return "generic 64-bit implementation";
 }
 
@@ -43,9 +45,11 @@ void KeccakP1600_Initialize(void *state)
     if (K12_enableAVX512)
         KeccakP1600_AVX512_Initialize(state);
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         KeccakP1600_AVX2_Initialize(state);
     else
+#endif
         KeccakP1600_opt64_Initialize(state);
 }
 
@@ -54,9 +58,11 @@ void KeccakP1600_AddByte(void *state, unsigned char data, unsigned int offset)
     if (K12_enableAVX512)
         ((unsigned char*)(state))[offset] ^= data;
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         KeccakP1600_AVX2_AddByte(state, data, offset);
     else
+#endif
         KeccakP1600_opt64_AddByte(state, data, offset);
 }
 
@@ -65,9 +71,11 @@ void KeccakP1600_AddBytes(void *state, const unsigned char *data, unsigned int o
     if (K12_enableAVX512)
         KeccakP1600_AVX512_AddBytes(state, data, offset, length);
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         KeccakP1600_AVX2_AddBytes(state, data, offset, length);
     else
+#endif
         KeccakP1600_opt64_AddBytes(state, data, offset, length);
 }
 
@@ -76,9 +84,11 @@ void KeccakP1600_Permute_12rounds(void *state)
     if (K12_enableAVX512)
         KeccakP1600_AVX512_Permute_12rounds(state);
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         KeccakP1600_AVX2_Permute_12rounds(state);
     else
+#endif
         KeccakP1600_opt64_Permute_12rounds(state);
 }
 
@@ -87,9 +97,11 @@ void KeccakP1600_ExtractBytes(const void *state, unsigned char *data, unsigned i
     if (K12_enableAVX512)
         KeccakP1600_AVX512_ExtractBytes(state, data, offset, length);
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         KeccakP1600_AVX2_ExtractBytes(state, data, offset, length);
     else
+#endif
         KeccakP1600_opt64_ExtractBytes(state, data, offset, length);
 }
 
@@ -98,9 +110,11 @@ size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount,
     if (K12_enableAVX512)
         return KeccakP1600_AVX512_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
     else
+#ifndef KeccakP1600_noAssembly
     if (K12_enableAVX2)
         return KeccakP1600_AVX2_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
     else
+#endif
         return KeccakP1600_opt64_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
 }
 

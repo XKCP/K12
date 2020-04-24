@@ -54,8 +54,8 @@ static const uint64_t rho56[4] = {0x0007060504030201, 0x080F0E0D0C0B0A09, 0x1017
 #define XOReq256(a, b)          a = _mm256_xor_si256(a, b)
 #define UNPACKL( a, b )         _mm256_unpacklo_epi64((a), (b))
 #define UNPACKH( a, b )         _mm256_unpackhi_epi64((a), (b))
-#define PERM128( a, b, c )      (__m256i)_mm256_permute2f128_ps((__m256)(a), (__m256)(b), c)
-#define SHUFFLE64( a, b, c )    (__m256i)_mm256_shuffle_pd((__m256d)(a), (__m256d)(b), c)
+#define PERM128( a, b, c )      _mm256_permute2f128_si256(a, b, c)
+#define SHUFFLE64( a, b, c )    _mm256_castpd_si256(_mm256_shuffle_pd(_mm256_castsi256_pd(a), _mm256_castsi256_pd(b), c))
 #define ZERO()                  _mm256_setzero_si256()
 
 static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {

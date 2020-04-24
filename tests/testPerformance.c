@@ -16,6 +16,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "align.h"
@@ -27,18 +28,20 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #define xstr(s) str(s)
 #define str(s) #s
 
+#define BIG_BUFFER_SIZE (2*1024*1024)
+ALIGN(64) uint8_t bigBuffer[BIG_BUFFER_SIZE];
+
 uint_32t measureKangarooTwelve(uint_32t dtMin, unsigned int inputLen)
 {
-    ALIGN(64) unsigned char input[2*1024*1024];
     ALIGN(64) unsigned char output[32];
     measureTimingDeclare
 
-    assert(inputLen <= 2*1024*1024);
+    assert(inputLen <= BIG_BUFFER_SIZE);
 
-    memset(input, 0xA5, 16);
+    memset(bigBuffer, 0xA5, 16);
 
     measureTimingBeginDeclared
-    KangarooTwelve(input, inputLen, output, 32, (const unsigned char *)"", 0);
+    KangarooTwelve(bigBuffer, inputLen, output, 32, (const unsigned char *)"", 0);
     measureTimingEnd
 }
 
@@ -136,7 +139,7 @@ void testKangarooTwelvePerformance()
 }
 void testPerformance()
 {
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     // Read feature availability
     KangarooTwelve_EnableAllCpuFeatures();
     int cpu_has_AVX512 = KangarooTwelve_DisableAVX512();
@@ -147,7 +150,7 @@ void testPerformance()
     // Test without vectorization
     testKangarooTwelvePerformance();
 
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     // Test with SSSE3 only if it's available
     if (cpu_has_SSSE3) {
         printf("\n");

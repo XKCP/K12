@@ -19,6 +19,7 @@ Please refer to the XKCP for more details.
 */
 
 #include <stdint.h>
+#include <emmintrin.h>
 #include <immintrin.h>
 #include "KeccakP-1600-SnP.h"
 
@@ -54,8 +55,8 @@ Please refer to the XKCP for more details.
 #define XOR5(a,b,c,d,e)             XOR3(XOR3(a,b,c),d,e)
 #define ROL(a,offset)               _mm_rol_epi64(a,offset)
 #define Chi(a,b,c)                  _mm_ternarylogic_epi64(a,b,c,0xD2)
-#define CONST_64(a)                 _mm_set1_epi64((__m64)(a))
-#define LOAD6464(a, b)              _mm_set_epi64((__m64)(a), (__m64)(b))
+#define CONST_64(a)                 _mm_set1_epi64x(a)
+#define LOAD6464(a, b)              _mm_set_epi64x(a, b)
 #define STORE128u(a, b)             _mm_storeu_si128((__m128i *)&(a), b)
 #define UNPACKL( a, b )             _mm_unpacklo_epi64((a), (b))
 #define UNPACKH( a, b )             _mm_unpackhi_epi64((a), (b))
@@ -330,7 +331,7 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
 #define STORE256u(a, b)         _mm256_storeu_si256((__m256i *)&(a), b)
 #define UNPACKL( a, b )         _mm256_unpacklo_epi64((a), (b))
 #define UNPACKH( a, b )         _mm256_unpackhi_epi64((a), (b))
-#define PERM128( a, b, c )      (__m256i)_mm256_permute2f128_ps((__m256)(a), (__m256)(b), c)
+#define PERM128( a, b, c )      _mm256_permute2f128_si256(a, b, c)
     {
         __m256i lanesL01, lanesL23, lanesH01, lanesH23;
 
