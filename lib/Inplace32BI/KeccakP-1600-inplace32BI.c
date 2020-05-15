@@ -168,7 +168,7 @@ void KeccakP1600_AddBytesInLane(void *state, unsigned int lanePosition, const un
 
 /* ---------------------------------------------------------------- */
 
-void KeccakP1600_AddLanes(void *state, const unsigned char *data, unsigned int laneCount)
+static void KeccakP1600_AddLanes(void *state, const unsigned char *data, unsigned int laneCount)
 {
 #if (PLATFORM_BYTE_ORDER == IS_LITTLE_ENDIAN)
     const uint32_t * pI = (const uint32_t *)data;

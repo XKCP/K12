@@ -37,6 +37,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <c gcc="-mssse3">lib/Optimized64/KeccakP-1600-timesN-SSSE3.c</c>
         <c gcc="-mavx2">lib/Optimized64/KeccakP-1600-timesN-AVX2.c</c>
         <c gcc="-mavx512f -mavx512vl">lib/Optimized64/KeccakP-1600-timesN-AVX512.c</c>
+        <c>lib/Optimized64/KeccakP-1600-runtimeDispatch.c</c>
     </fragment>
 
     <fragment name="optimized64noAsm" inherits="optimized">
@@ -46,7 +47,14 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <c gcc="-mssse3">lib/Optimized64/KeccakP-1600-timesN-SSSE3.c</c>
         <c gcc="-mavx2">lib/Optimized64/KeccakP-1600-timesN-AVX2.c</c>
         <c gcc="-mavx512f -mavx512vl">lib/Optimized64/KeccakP-1600-timesN-AVX512.c</c>
+        <c>lib/Optimized64/KeccakP-1600-runtimeDispatch.c</c>
         <define>KeccakP1600_noAssembly</define>
+    </fragment>
+
+    <fragment name="optimized64plain" inherits="optimized">
+        <c>lib/Optimized64/KeccakP-1600-opt64.c</c>
+        <c>lib/Plain64/KeccakP-1600-plain64.c</c>
+        <h>lib/Plain64/KeccakP-1600-SnP.h</h>
     </fragment>
 
     <!-- KangarooTwelve -->
@@ -88,10 +96,13 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- Same, but without the assembly file (for MS Visual Studio) -->
     <fragment name="generic64noAsm" inherits="optimized64noAsm"/>
 
+    <!-- Plain C optimized 64-bit implementation only -->
+    <fragment name="plain64" inherits="optimized64plain"/>
+
     <!-- Target names are of the form x/y where x is taken from the first set and y from the second set. -->
     <group all="all">
         <product delimiter="/">
-            <factor set="generic32 generic64 generic64noAsm"/>
+            <factor set="generic32 generic64 generic64noAsm plain64"/>
             <factor set="K12Tests libk12.a libk12.so libk12.dylib"/>
         </product>
     </group>

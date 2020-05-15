@@ -45,11 +45,15 @@ uint_32t measureKangarooTwelve(uint_32t dtMin, unsigned int inputLen)
     measureTimingEnd
 }
 
+#ifndef KeccakP1600_disableParallelism
 void KangarooTwelve_SetProcessorCapabilities();
+#endif
 
 void printKangarooTwelvePerformanceHeader( void )
 {
+#ifndef KeccakP1600_disableParallelism
     KangarooTwelve_SetProcessorCapabilities();
+#endif
     printf("*** KangarooTwelve ***\n");
     printf("Using Keccak-p[1600,12] implementations:\n");
     printf("- \303\2271: %s\n", KeccakP1600_GetImplementation());

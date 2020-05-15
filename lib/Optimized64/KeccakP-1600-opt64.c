@@ -22,101 +22,7 @@ Please refer to the XKCP for more details.
 #include <stdlib.h>
 #include <string.h>
 #include "brg_endian.h"
-#include "KeccakP-1600-SnP.h"
-
-extern int K12_enableAVX2;
-extern int K12_enableAVX512;
-
-const char * KeccakP1600_GetImplementation()
-{
-    if (K12_enableAVX512)
-        return "AVX-512 implementation";
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        return "AVX2 implementation";
-    else
-#endif
-        return "generic 64-bit implementation";
-}
-
-void KeccakP1600_Initialize(void *state)
-{
-    if (K12_enableAVX512)
-        KeccakP1600_AVX512_Initialize(state);
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        KeccakP1600_AVX2_Initialize(state);
-    else
-#endif
-        KeccakP1600_opt64_Initialize(state);
-}
-
-void KeccakP1600_AddByte(void *state, unsigned char data, unsigned int offset)
-{
-    if (K12_enableAVX512)
-        ((unsigned char*)(state))[offset] ^= data;
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        KeccakP1600_AVX2_AddByte(state, data, offset);
-    else
-#endif
-        KeccakP1600_opt64_AddByte(state, data, offset);
-}
-
-void KeccakP1600_AddBytes(void *state, const unsigned char *data, unsigned int offset, unsigned int length)
-{
-    if (K12_enableAVX512)
-        KeccakP1600_AVX512_AddBytes(state, data, offset, length);
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        KeccakP1600_AVX2_AddBytes(state, data, offset, length);
-    else
-#endif
-        KeccakP1600_opt64_AddBytes(state, data, offset, length);
-}
-
-void KeccakP1600_Permute_12rounds(void *state)
-{
-    if (K12_enableAVX512)
-        KeccakP1600_AVX512_Permute_12rounds(state);
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        KeccakP1600_AVX2_Permute_12rounds(state);
-    else
-#endif
-        KeccakP1600_opt64_Permute_12rounds(state);
-}
-
-void KeccakP1600_ExtractBytes(const void *state, unsigned char *data, unsigned int offset, unsigned int length)
-{
-    if (K12_enableAVX512)
-        KeccakP1600_AVX512_ExtractBytes(state, data, offset, length);
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        KeccakP1600_AVX2_ExtractBytes(state, data, offset, length);
-    else
-#endif
-        KeccakP1600_opt64_ExtractBytes(state, data, offset, length);
-}
-
-size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen)
-{
-    if (K12_enableAVX512)
-        return KeccakP1600_AVX512_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
-    else
-#ifndef KeccakP1600_noAssembly
-    if (K12_enableAVX2)
-        return KeccakP1600_AVX2_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
-    else
-#endif
-        return KeccakP1600_opt64_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
-}
+#include <KeccakP-1600-SnP.h>
 
 #define KeccakP1600_opt64_implementation_config "all rounds unrolled"
 #define KeccakP1600_opt64_fullUnrolling
@@ -235,7 +141,7 @@ void KeccakP1600_opt64_AddBytesInLane(void *state, unsigned int lanePosition, co
 
 /* ---------------------------------------------------------------- */
 
-void KeccakP1600_opt64_AddLanes(void *state, const unsigned char *data, unsigned int laneCount)
+static void KeccakP1600_opt64_AddLanes(void *state, const unsigned char *data, unsigned int laneCount)
 {
 #if (PLATFORM_BYTE_ORDER == IS_LITTLE_ENDIAN)
     unsigned int i = 0;

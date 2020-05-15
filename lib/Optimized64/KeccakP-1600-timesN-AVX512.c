@@ -22,20 +22,7 @@ Please refer to the XKCP for more details.
 #include <emmintrin.h>
 #include <immintrin.h>
 #include "KeccakP-1600-SnP.h"
-
-#ifdef ALIGN
-#undef ALIGN
-#endif
-
-#if defined(__GNUC__)
-#define ALIGN(x) __attribute__ ((aligned(x)))
-#elif defined(_MSC_VER)
-#define ALIGN(x) __declspec(align(x))
-#elif defined(__ARMCC_VERSION)
-#define ALIGN(x) __align(x)
-#else
-#define ALIGN(x)
-#endif
+#include "align.h"
 
 #define AVX512alignment 64
 

@@ -21,22 +21,9 @@ Please refer to the XKCP for more details.
 #include <stdint.h>
 #include <tmmintrin.h>
 #include "KeccakP-1600-SnP.h"
+#include "align.h"
 
 #define KeccakP1600times2_SSSE3_unrolling 2
-
-#ifdef ALIGN
-#undef ALIGN
-#endif
-
-#if defined(__GNUC__)
-#define ALIGN(x) __attribute__ ((aligned(x)))
-#elif defined(_MSC_VER)
-#define ALIGN(x) __declspec(align(x))
-#elif defined(__ARMCC_VERSION)
-#define ALIGN(x) __align(x)
-#else
-#define ALIGN(x)
-#endif
 
 #define SSSE3alignment 16
 
