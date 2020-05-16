@@ -26,9 +26,6 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "timing.h"
 #include "testPerformance.h"
 
-#define xstr(s) str(s)
-#define str(s) #s
-
 #define BIG_BUFFER_SIZE (2*1024*1024)
 ALIGN(64) uint8_t bigBuffer[BIG_BUFFER_SIZE];
 
