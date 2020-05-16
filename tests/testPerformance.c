@@ -32,7 +32,10 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #define BIG_BUFFER_SIZE (2*1024*1024)
 ALIGN(64) uint8_t bigBuffer[BIG_BUFFER_SIZE];
 
-int64_t measureKangarooTwelve(int64_t dtMin, unsigned int inputLen)
+int64_t measurePerformance(int (*impl)(const unsigned char*, size_t,
+                                       unsigned char*, size_t,
+                                       const unsigned char*, size_t),
+                           int64_t dtMin, unsigned int inputLen)
 {
     ALIGN(64) unsigned char output[32];
     measureTimingDeclare
@@ -42,7 +45,7 @@ int64_t measureKangarooTwelve(int64_t dtMin, unsigned int inputLen)
     memset(bigBuffer, 0xA5, 16);
 
     measureTimingBeginDeclared
-    KangarooTwelve(bigBuffer, inputLen, output, 32, (const unsigned char *)"", 0);
+    impl(bigBuffer, inputLen, output, 32, (const unsigned char *)"", 0);
     measureTimingEnd
 }
 
@@ -94,7 +97,9 @@ void printKangarooTwelvePerformanceHeader( void )
     printf("\n");
 }
 
-void testKangarooTwelvePerformanceOne( void )
+void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
+                                     unsigned char*, size_t,
+                                     const unsigned char*, size_t))
 {
     const unsigned int chunkSize = 8192;
     unsigned halfTones;
@@ -102,20 +107,20 @@ void testKangarooTwelvePerformanceOne( void )
     unsigned int chunkSizeLog = (unsigned int)floor(log(chunkSize)/log(2.0)+0.5);
     int displaySlope = 0;
 
-    measureKangarooTwelve(calibration, 500000);
+    measurePerformance(impl, calibration, 500000);
     for(halfTones=chunkSizeLog*12-28; halfTones<=13*12; halfTones+=4) {
         double I = pow(2.0, halfTones/12.0);
         unsigned int i  = (unsigned int)floor(I+0.5);
         int64_t time, timePlus1Block, timePlus2Blocks, timePlus4Blocks, timePlus8Blocks;
         int64_t timePlus168Blocks;
-        time = measureKangarooTwelve(calibration, i);
+        time = measurePerformance(impl, calibration, i);
         if (i == chunkSize) {
             displaySlope = 1;
-            timePlus1Block  = measureKangarooTwelve(calibration, i+1*chunkSize);
-            timePlus2Blocks = measureKangarooTwelve(calibration, i+2*chunkSize);
-            timePlus4Blocks = measureKangarooTwelve(calibration, i+4*chunkSize);
-            timePlus8Blocks = measureKangarooTwelve(calibration, i+8*chunkSize);
-            timePlus168Blocks = measureKangarooTwelve(calibration, i+168*chunkSize);
+            timePlus1Block  = measurePerformance(impl, calibration, i+1*chunkSize);
+            timePlus2Blocks = measurePerformance(impl, calibration, i+2*chunkSize);
+            timePlus4Blocks = measurePerformance(impl, calibration, i+4*chunkSize);
+            timePlus8Blocks = measurePerformance(impl, calibration, i+8*chunkSize);
+            timePlus168Blocks = measurePerformance(impl, calibration, i+168*chunkSize);
         }
         printf("%8u bytes: %9"PRId64" cycles, %6.3f cycles/byte\n", i, time, time*1.0/i);
         if (displaySlope) {
@@ -131,7 +136,7 @@ void testKangarooTwelvePerformanceOne( void )
         double I = chunkSize + pow(2.0, halfTones/12.0);
         unsigned int i  = (unsigned int)floor(I+0.5);
         int64_t time;
-        time = measureKangarooTwelve(calibration, i);
+        time = measurePerformance(impl, calibration, i);
         printf("%8u bytes: %9"PRId64" cycles, %6.3f cycles/byte\n", i, time, time*1.0/i);
     }
     printf("\n\n");
@@ -140,7 +145,7 @@ void testKangarooTwelvePerformanceOne( void )
 void testKangarooTwelvePerformance()
 {
     printKangarooTwelvePerformanceHeader();
-    testKangarooTwelvePerformanceOne();
+    testPerformanceFull(KangarooTwelve);
 }
 void testPerformance()
 {
@@ -178,4 +183,17 @@ void testPerformance()
         testKangarooTwelvePerformance();
     }
 #endif
+
+    // Set `comparison` to your own function here to directly
+    // compare performance against K12. It should have the same signature
+    // as KangarooTwelve(...): the parameters are input, output, and
+    // customization buffers.
+    int (*comparison)(const unsigned char*, size_t,
+                      unsigned char*, size_t,
+                      const unsigned char*, size_t) = NULL;
+
+    if (comparison != NULL) {
+      printf("\n*** Non-K12 function for comparison: ***\n");
+      testPerformanceFull(comparison);
+    }
 }
