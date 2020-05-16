@@ -170,13 +170,13 @@ static void performTestKangarooTwelveOneInput(unsigned int inputLen, unsigned in
         unsigned int i;
 
         printf("KangarooTwelve\n");
-        printf("Input of %d bytes:", inputLen);
+        printf("Input of %u bytes:", inputLen);
         for(i=0; (i<inputLen) && (i<16); i++)
             printf(" %02x", (int)input[i]);
         if (inputLen > 16)
             printf(" ...");
         printf("\n");
-        printf("Output of %d bytes:", outputLen);
+        printf("Output of %u bytes:", outputLen);
         for(i=0; i<outputLen; i++)
             printf(" %02x", (int)output[i]);
         printf("\n\n");
@@ -308,7 +308,7 @@ void printKangarooTwelveTestVectors()
         M = malloc(l);
         for(j=0; j<l; j++)
             M[j] = j%251;
-        printf("KangarooTwelve(M=pattern 0x00 to 0xFA for 17^%d bytes, C=empty, 32 output bytes):\n", i);
+        printf("KangarooTwelve(M=pattern 0x00 to 0xFA for 17^%u bytes, C=empty, 32 output bytes):\n", i);
         KangarooTwelve(M, l, output, 32, 0, 0);
         outputHex(output, 32);
         free(M);
@@ -320,7 +320,7 @@ void printKangarooTwelveTestVectors()
         C = malloc(l);
         for(j=0; j<l; j++)
             C[j] = j%251;
-        printf("KangarooTwelve(M=%d times byte 0xFF, C=pattern 0x00 to 0xFA for 41^%d bytes, 32 output bytes):\n", ll, i);
+        printf("KangarooTwelve(M=%u times byte 0xFF, C=pattern 0x00 to 0xFA for 41^%u bytes, 32 output bytes):\n", ll, i);
         KangarooTwelve(M, ll, output, 32, C, l);
         outputHex(output, 32);
         free(M);
