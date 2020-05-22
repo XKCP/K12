@@ -29,10 +29,10 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #define BIG_BUFFER_SIZE (2*1024*1024)
 ALIGN(64) uint8_t bigBuffer[BIG_BUFFER_SIZE];
 
-int64_t measurePerformance(int (*impl)(const unsigned char*, size_t,
+cycles_t measurePerformance(int (*impl)(const unsigned char*, size_t,
                                        unsigned char*, size_t,
                                        const unsigned char*, size_t),
-                           int64_t dtMin, unsigned int inputLen)
+                           cycles_t dtMin, unsigned int inputLen)
 {
     ALIGN(64) unsigned char output[32];
     measureTimingDeclare
@@ -100,7 +100,7 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
 {
     const unsigned int chunkSize = 8192;
     unsigned halfTones;
-    int64_t calibration = CalibrateTimer();
+    cycles_t calibration = CalibrateTimer();
     unsigned int chunkSizeLog = (unsigned int)floor(log(chunkSize)/log(2.0)+0.5);
     int displaySlope = 0;
 
@@ -108,8 +108,8 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
     for(halfTones=chunkSizeLog*12-28; halfTones<=13*12; halfTones+=4) {
         double I = pow(2.0, halfTones/12.0);
         unsigned int i  = (unsigned int)floor(I+0.5);
-        int64_t time, timePlus1Block, timePlus2Blocks, timePlus4Blocks, timePlus8Blocks;
-        int64_t timePlus168Blocks;
+        cycles_t time, timePlus1Block, timePlus2Blocks, timePlus4Blocks, timePlus8Blocks;
+        cycles_t timePlus168Blocks;
         time = measurePerformance(impl, calibration, i);
         if (i == chunkSize) {
             displaySlope = 1;
@@ -132,7 +132,7 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
     for(halfTones=12*12; halfTones<=20*12; halfTones+=4) {
         double I = chunkSize + pow(2.0, halfTones/12.0);
         unsigned int i  = (unsigned int)floor(I+0.5);
-        int64_t time;
+        cycles_t time;
         time = measurePerformance(impl, calibration, i);
         printf("%8u bytes: %9"PRId64" cycles, %6.3f cycles/byte\n", i, time, time*1.0/i);
     }

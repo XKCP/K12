@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef _K12_timing_h_
-#define _K12_timing_h_
+#ifndef _XKCP_timing_h_
+#define _XKCP_timing_h_
 
 #include <stdint.h>
 
@@ -133,7 +133,7 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
 #elif defined(BENCHMARK_OS_EMSCRIPTEN)
   // this goes above x86-specific code because old versions of Emscripten
   // define __x86_64__, although they have nothing to do with it.
-  return static_cast<int64_t>(emscripten_get_now() * 1e+6);
+  return (int64_t)(emscripten_get_now() * 1e+6);
 #elif defined(__i386__)
   int64_t ret;
   __asm__ volatile("rdtsc" : "=A"(ret));
@@ -155,9 +155,9 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
       "mftbl %1\n"
       "mftbu %2"
       : "=r"(tbu0), "=r"(tbl), "=r"(tbu1));
-  tbl &= -static_cast<int32_t>(tbu0 == tbu1);
+  tbl &= -(int32_t)(tbu0 == tbu1);
   // high 32 bits in tbu1; low 32 bits in tbl  (tbu0 is no longer needed)
-  return (static_cast<uint64_t>(tbu1) << 32) | tbl;
+  return ((uint64_t)(tbu1) << 32) | tbl;
 #endif
 #elif defined(__sparc__)
   int64_t tick;
@@ -191,7 +191,7 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
   // Initialize to always return 0 if clock_gettime fails.
   struct timespec ts = {0, 0};
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  return static_cast<int64_t>(ts.tv_sec) * 1000000000 + ts.tv_nsec;
+  return (int64_t)(ts.tv_sec) * 1000000000 + ts.tv_nsec;
 #elif defined(__aarch64__)
   // System timer of ARMv8 runs at a different frequency than the CPU's.
   // The frequency is fixed, typically in the range 1-50MHz.  It can be
@@ -214,19 +214,19 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
     if (pmcntenset & 0x80000000ul) {  // Is it counting?
       asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(pmccntr));
       // The counter is set up to count every 64th cycle
-      return static_cast<int64_t>(pmccntr) * 64;  // Should optimize to << 6
+      return (int64_t)(pmccntr) * 64;  // Should optimize to << 6
     }
   }
 #endif
   struct timeval tv;
-  gettimeofday(&tv, nullptr);
-  return static_cast<int64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
+  gettimeofday(&tv, NULL);
+  return (int64_t)(tv.tv_sec) * 1000000 + tv.tv_usec;
 #elif defined(__mips__)
   // mips apparently only allows rdtsc for superusers, so we fall
   // back to gettimeofday.  It's possible clock_gettime would be better.
   struct timeval tv;
-  gettimeofday(&tv, nullptr);
-  return static_cast<int64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
+  gettimeofday(&tv, NULL);
+  return (int64_t)(tv.tv_sec) * 1000000 + tv.tv_usec;
 #elif defined(__s390__)  // Covers both s390 and s390x.
   // Return the CPU clock.
   uint64_t tsc;
@@ -247,7 +247,7 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
       "sub %0, zero, %0\n"
       "and %1, %1, %0\n"
       : "=r"(cycles_hi0), "=r"(cycles_lo), "=r"(cycles_hi1));
-  return (static_cast<uint64_t>(cycles_hi1) << 32) | cycles_lo;
+  return ((uint64_t)(cycles_hi1) << 32) | cycles_lo;
 #else
   uint64_t cycles;
   asm volatile("rdcycle %0" : "=r"(cycles));
@@ -262,15 +262,18 @@ inline BENCHMARK_ALWAYS_INLINE int64_t CycleTimer() {
 }
 
 /* ---------------------------------------------------------------- */
-/*           KangarooTwelve-specific definitions follow.            */
+/*           XKCP-specific definitions follow.                      */
 /* ---------------------------------------------------------------- */
+
+typedef int64_t cycles_t;
+#define CYCLES_MAX INT64_MAX
 
 #define TIMER_SAMPLE_CNT (100)
 
-static int64_t CalibrateTimer()
+static cycles_t CalibrateTimer()
 {
-    int64_t dtMin = INT64_MAX;        /* big number to start */
-    int64_t t0,t1,i;
+    cycles_t dtMin = CYCLES_MAX;        /* big number to start */
+    cycles_t t0,t1,i;
 
     for (i=0;i < TIMER_SAMPLE_CNT;i++)  /* calibrate the overhead for measuring time */
         {
@@ -283,8 +286,8 @@ static int64_t CalibrateTimer()
 }
 
 #define measureTimingDeclare \
-    int64_t tMin = INT64_MAX; \
-    int64_t t0,t1,i;
+    cycles_t tMin = CYCLES_MAX; \
+    cycles_t t0,t1,i;
 
 #define measureTimingBeginDeclared \
     for (i=0;i < TIMER_SAMPLE_CNT;i++) \
@@ -292,8 +295,8 @@ static int64_t CalibrateTimer()
         t0 = CycleTimer();
 
 #define measureTimingBegin \
-    int64_t tMin = INT64_MAX; \
-    int64_t t0,t1,i; \
+    cycles_t tMin = CYCLES_MAX; \
+    cycles_t t0,t1,i; \
     for (i=0;i < TIMER_SAMPLE_CNT;i++) \
         { \
         t0 = CycleTimer();
@@ -305,4 +308,4 @@ static int64_t CalibrateTimer()
         } \
     return tMin;
 
-#endif  // _K12_timing_h_
+#endif  // _XKCP_timing_h_
