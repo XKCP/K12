@@ -24,6 +24,12 @@ Also, some sources have been merged to reduce the file count.
 For Keccak or Xoodoo-based functions other than K12 only, it is recommended to use the XKCP itself instead and not to mix both this repository and the XKCP.
 
 
+# Is there a tool to compute the K12 hash of a file?
+
+Not in this repository, but Jack O'Connor's [`kangarootwelve_xkcp.rs` repository](https://github.com/oconnor663/kangarootwelve_xkcp.rs) contains Rust bindings to this code and a `k12sum` utility.
+Pre-built binaries can be found [there](https://github.com/oconnor663/kangarootwelve_xkcp.rs/releases).
+
+
 # How can I build this K12 code?
 
 This repository uses the same build system as that of the XKCP.
@@ -65,3 +71,11 @@ Please refer to the documention of [XKCP][xkcp] for more details on the limitati
 [k12]: https://keccak.team/kangarootwelve.html
 [xkcp]: https://github.com/XKCP/XKCP
 [eprint]: https://eprint.iacr.org/2016/770.pdf
+
+
+# Acknowledgments
+
+We wish to thank:
+
+- Jack O'Connor for bug fixes and more importantly for his [Rust bindings](https://github.com/oconnor663/kangarootwelve_xkcp.rs)
+- Kent Ross for his contributions to this code and its quality
