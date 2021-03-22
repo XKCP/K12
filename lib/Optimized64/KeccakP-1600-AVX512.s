@@ -28,9 +28,9 @@ KeccakP1600_AVX512_Initialize:
 .endif
 .balign  32
     vpxorq      %zmm0,%zmm0,%zmm0
-    vmovdqa64   %zmm0,0*64(%rdi)
-    vmovdqa64   %zmm0,1*64(%rdi)
-    vmovdqa64   %zmm0,2*64(%rdi)
+    vmovdqu64   %zmm0,0*64(%rdi)
+    vmovdqu64   %zmm0,1*64(%rdi)
+    vmovdqu64   %zmm0,2*64(%rdi)
     movq        $0,3*64(%rdi)
     ret
 .ifdef macOS

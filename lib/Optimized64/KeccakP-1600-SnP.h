@@ -24,7 +24,7 @@ Please refer to the XKCP for more details.
 /* Keccak-p[1600] */
 
 #define KeccakP1600_stateSizeInBytes    200
-#define KeccakP1600_stateAlignment      64
+#define KeccakP1600_stateAlignment      8
 #define KeccakP1600_12rounds_FastLoop_supported
 
 const char * KeccakP1600_GetImplementation();
