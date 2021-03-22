@@ -436,7 +436,7 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Loop21Lanes:
     vmovdqu         8(%rdx),%ymm8
 
     vmovdqa         map2(%rip), %xmm15
-    vpcmpeqq        %ymm14, %ymm14, %ymm14    
+    vpcmpeqd        %ymm14, %ymm14, %ymm14
     vpgatherdq      %ymm14, (%rdx, %xmm15, 1), %ymm9
 
     vmovdqa         mask3_21(%rip), %ymm14
