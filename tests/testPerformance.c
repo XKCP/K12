@@ -26,6 +26,10 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "timing.h"
 #include "testPerformance.h"
 
+#if !defined(__x86_64__) && !defined(_M_X64) && !defined(__i386__) && !defined(_M_IX86)
+#undef KeccakP1600_enable_simd_options
+#endif
+
 #define BIG_BUFFER_SIZE (2*1024*1024)
 ALIGN(64) uint8_t bigBuffer[BIG_BUFFER_SIZE];
 
@@ -46,13 +50,13 @@ cycles_t measurePerformance(int (*impl)(const unsigned char*, size_t,
     measureTimingEnd
 }
 
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
 void KangarooTwelve_SetProcessorCapabilities();
 #endif
 
 void printKangarooTwelvePerformanceHeader( void )
 {
-#ifndef KeccakP1600_disableParallelism
+#if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     KangarooTwelve_SetProcessorCapabilities();
 #endif
     printf("*** KangarooTwelve ***\n");

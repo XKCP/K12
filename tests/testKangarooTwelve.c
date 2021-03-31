@@ -27,6 +27,10 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #define checksumByteSize        16
 #define cChunkSize              8192
 
+#if !defined(__x86_64__) && !defined(_M_X64) && !defined(__i386__) && !defined(_M_IX86)
+#undef KeccakP1600_enable_simd_options
+#endif
+
 #if (defined(OUTPUT) || defined(VERBOSE) || !defined(EMBEDDED))
 #include <stdio.h>
 #endif

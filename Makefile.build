@@ -57,6 +57,12 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <h>lib/Plain64/KeccakP-1600-SnP.h</h>
     </fragment>
 
+    <fragment name="ARMv8Asha3" inherits="optimized">
+        <c gcc="-march=armv8.4-a+sha3">lib/ARMv8Asha3/KeccakP-1600-opt64.c</c>
+        <s gcc="-march=armv8.4-a+sha3">lib/ARMv8Asha3/KeccakP-1600-ARMv8Asha3.S</s>
+        <h>lib/ARMv8Asha3/KeccakP-1600-SnP.h</h>
+    </fragment>
+
     <!-- KangarooTwelve -->
 
     <fragment name="KangarooTwelve">
@@ -67,6 +73,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- For the name of the targets, please see the end of this file. -->
 
     <fragment name="common">
+        <h>lib/align.h</h>
         <h>lib/brg_endian.h</h>
     </fragment>
 
@@ -103,7 +110,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- Target names are of the form x/y where x is taken from the first set and y from the second set. -->
     <group all="all">
         <product delimiter="/">
-            <factor set="generic32 generic64 generic64noAsm plain64"/>
+            <factor set="generic32 generic64 generic64noAsm plain64 ARMv8Asha3"/>
             <factor set="K12Tests libk12.a libk12.so libk12.dylib"/>
         </product>
     </group>

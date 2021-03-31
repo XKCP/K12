@@ -6,7 +6,8 @@
 Derived from Keccak, it aims at higher speeds than FIPS 202's SHA-3 and SHAKE functions, while retaining their flexibility and basis of security.
 
 On high-end platforms, it can exploit a high degree of parallelism, whether using multiple cores or the single-instruction multiple-data (SIMD) instruction set of modern processors.
-On Intel's® Haswell and Skylake architectures, KangarooTwelve tops at less than 1.5 cycles/byte for long messages on a single core, and at 0.55 cycles/byte on the SkylakeX architecture.
+On Intel's Haswell and Skylake architectures, KangarooTwelve tops at less than 1.5 cycles/byte for long messages on a single core, and at 0.51 cycles/byte on the SkylakeX and Cascade Lake architectures.
+On the latest Apple A14 and M1 processors, KangarooTwelve can take advantage of the ARMv8-A's SHA-3 dedicated instructions to deliver 0.75 cycles/byte for long messages on a single core.
 On low-end platforms, as well as for short messages, it also benefits from about a factor two speed-up compared to the fastest FIPS 202 instance SHAKE128.
 
 More details can be found in our [ACNS Paper][eprint].
@@ -79,5 +80,7 @@ Please refer to the documention of [XKCP][xkcp] for more details on the limitati
 
 We wish to thank:
 
+- Andy Polyakov for his expertise with the ARMv8-A+SHA3 code, and in particular for his core routine from [CRYPTOGAMS](https://github.com/dot-asm/cryptogams)
+- Duc Tri Nguyen for his benchmark on the Apple M1
 - Jack O'Connor for bug fixes and more importantly for his [Rust bindings](https://github.com/oconnor663/kangarootwelve_xkcp.rs)
 - Kent Ross for his contributions to this code and its quality
