@@ -66,6 +66,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- KangarooTwelve -->
 
     <fragment name="KangarooTwelve">
+        <h>lib/align.h</h>
         <c>lib/KangarooTwelve.c</c>
         <h>lib/KangarooTwelve.h</h>
     </fragment>
