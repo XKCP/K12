@@ -52,33 +52,37 @@ http://creativecommons.org/publicdomain/zero/1.0/
 </xsl:template>
 
 <xsl:template match="gcc">
-    <!-- What follows is a shameless hack to avoid -march=native on aarch64 with clang -->
-    <xsl:if test=".= '-march=native'">
-        <xsl:text>ifneq ($(UNAME_M)$(findstring clang,$(CC)),aarch64clang)
+    <!-- What follows is a shameless hack to avoid -march/-mtune=native on arm64/aarch64 with clang -->
+    <xsl:if test=".= '-march=native' or .= '-mtune=native'">
+        <xsl:text>ifneq ($(UNAME_M),aarch64)
+ifneq ($(UNAME_S),Darwin)
 </xsl:text>
     </xsl:if>
     <xsl:text>CFLAGS := $(CFLAGS) </xsl:text>
     <xsl:value-of select="."/>
     <xsl:text>
 </xsl:text>
-    <xsl:if test=".= '-march=native'">
+    <xsl:if test=".= '-march=native' or .= '-mtune=native'">
         <xsl:text>endif
+endif
 </xsl:text>
     </xsl:if>
 </xsl:template>
 
 <xsl:template match="gas">
-    <!-- What follows is a shameless hack to avoid -march=native on aarch64 with clang -->
-    <xsl:if test=".= '-march=native'">
-        <xsl:text>ifneq ($(UNAME_M)$(findstring clang,$(CC)),aarch64clang)
+    <!-- What follows is a shameless hack to avoid -march/-mtune=native on arm64/aarch64 with clang -->
+    <xsl:if test=".= '-march=native' or .= '-mtune=native'">
+        <xsl:text>ifneq ($(UNAME_M),aarch64)
+ifneq ($(UNAME_S),Darwin)
 </xsl:text>
     </xsl:if>
     <xsl:text>ASMFLAGS := $(ASMFLAGS) </xsl:text>
     <xsl:value-of select="."/>
     <xsl:text>
 </xsl:text>
-    <xsl:if test=".= '-march=native'">
+    <xsl:if test=".= '-march=native' or .= '-mtune=native'">
         <xsl:text>endif
+endif
 </xsl:text>
     </xsl:if>
 </xsl:template>
@@ -200,9 +204,11 @@ ifeq ($(UNAME_S),Linux)
     ASMFLAGS :=
 endif
 ifeq ($(UNAME_S),Darwin)
-    ASMFLAGS := -x assembler-with-cpp -Wa,-defsym,macOS=1
+    ASMFLAGS := -x assembler-with-cpp -Wa,-defsym,old_gas_syntax=1 -Wa,-defsym,no_plt=1
 endif
-
+ifneq (,$(findstring mingw32,$(CC)))
+    ASMFLAGS := -x assembler-with-cpp -Wa,-defsym,old_gas_syntax=1 -Wa,-defsym,no_plt=1
+endif
 UNAME_M := $(shell uname -m)
 
 </xsl:text>
