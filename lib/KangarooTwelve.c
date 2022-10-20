@@ -47,7 +47,7 @@ static void KangarooTwelve_F_Absorb(KangarooTwelve_F *instance, const unsigned c
     i = 0;
     curData = data;
     while(i < dataByteLen) {
-        if ((instance->byteIOIndex == 0) && (dataByteLen >= (i + rateInBytes))) {
+        if ((instance->byteIOIndex == 0) && (dataByteLen-i >= rateInBytes)) {
 #ifdef KeccakP1600_12rounds_FastLoop_supported
             /* processing full blocks first */
             j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, K12_rateInLanes, curData, dataByteLen - i);
@@ -62,7 +62,7 @@ static void KangarooTwelve_F_Absorb(KangarooTwelve_F *instance, const unsigned c
             i = dataByteLen - j;
         } else {
             /* normal lane: using the message queue */
-            if ((dataByteLen - i) + instance->byteIOIndex > (size_t)rateInBytes) {
+            if (dataByteLen - i > (size_t)rateInBytes - instance->byteIOIndex) {
                 partialBlock = rateInBytes-instance->byteIOIndex;
             } else {
                 partialBlock = (uint8_t)(dataByteLen - i);
@@ -112,7 +112,7 @@ static void KangarooTwelve_F_Squeeze(KangarooTwelve_F *instance, unsigned char *
     i = 0;
     curData = data;
     while(i < dataByteLen) {
-        if ((instance->byteIOIndex == rateInBytes) && (dataByteLen >= (i + rateInBytes))) {
+        if ((instance->byteIOIndex == rateInBytes) && (dataByteLen-i >= rateInBytes)) {
             for(j=dataByteLen-i; j>=rateInBytes; j-=rateInBytes) {
                 KeccakP1600_Permute_12rounds(instance->state);
                 KeccakP1600_ExtractBytes(instance->state, curData, 0, rateInBytes);
@@ -125,9 +125,10 @@ static void KangarooTwelve_F_Squeeze(KangarooTwelve_F *instance, unsigned char *
                 KeccakP1600_Permute_12rounds(instance->state);
                 instance->byteIOIndex = 0;
             }
-            partialBlock = (unsigned int)(dataByteLen - i);
-            if (partialBlock+instance->byteIOIndex > rateInBytes)
+            if (dataByteLen-i > rateInBytes-instance->byteIOIndex)
                 partialBlock = rateInBytes-instance->byteIOIndex;
+            else
+                partialBlock = (unsigned int)(dataByteLen - i);
             i += partialBlock;
 
             KeccakP1600_ExtractBytes(instance->state, curData, instance->byteIOIndex, partialBlock);
