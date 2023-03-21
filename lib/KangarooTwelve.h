@@ -22,15 +22,15 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "align.h"
 #include "KeccakP-1600-SnP.h"
 
-typedef struct KangarooTwelve_FStruct {
+typedef struct TurboSHAKE128_InstanceStruct {
     uint8_t state[KeccakP1600_stateSizeInBytes];
     uint8_t byteIOIndex;
     uint8_t squeezing;
-} KangarooTwelve_F;
+} TurboSHAKE128_Instance;
 
 typedef struct KangarooTwelve_InstanceStruct {
-    ALIGN(KeccakP1600_stateAlignment) KangarooTwelve_F queueNode;
-    ALIGN(KeccakP1600_stateAlignment) KangarooTwelve_F finalNode;
+    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE128_Instance queueNode;
+    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE128_Instance finalNode;
     size_t fixedOutputLength;
     size_t blockNumber;
     unsigned int queueAbsorbedLen;
