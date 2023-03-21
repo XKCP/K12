@@ -1,5 +1,3 @@
-[![Build Status](http://img.shields.io/travis/XKCP/K12.svg)](https://travis-ci.org/XKCP/K12)
-
 # What is KangarooTwelve ?
 
 [**KangarooTwelve**][k12] (or **K12**) is a fast and secure extendable-output function (XOF), the generalization of hash functions to arbitrary output lengths.
