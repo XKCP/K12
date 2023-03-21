@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target: ["generic32", "generic64", "generic64noAsm", "plain64"]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install xsltproc
+      run: sudo apt-get install xsltproc
+    - name: Build
+      run: make ${{ matrix.target }}/K12Tests ${{ matrix.target }}/libk12.a ${{ matrix.target }}/libk12.so
+    - name: Test
+      run: bin/${{ matrix.target }}/K12Tests -K12
