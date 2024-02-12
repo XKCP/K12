@@ -22,6 +22,8 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "align.h"
 #include "KeccakP-1600-SnP.h"
 
+// TODO: add the `securityLevel` parameter to the documentation comments
+
 typedef struct TurboSHAKE128_InstanceStruct {
     uint8_t state[KeccakP1600_stateSizeInBytes];
     uint8_t byteIOIndex;
@@ -46,7 +48,7 @@ typedef struct KangarooTwelve_InstanceStruct {
   * @param  customByteLen   The length of the customization string in bytes.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen);
+int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen, int securityLevel);
 
 /**
   * Function to initialize a KangarooTwelve instance.
@@ -55,7 +57,7 @@ int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned cha
   *                         or 0 for an arbitrarily-long output.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen);
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen, int securityLevel);
 
 /**
   * Function to give input data to be absorbed.
@@ -64,7 +66,7 @@ int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t output
   * @param  inputByteLen    The number of bytes provided in the input message data.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen);
+int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen, int securityLevel);
 
 /**
   * Function to call after all the input message has been input, and to get
@@ -79,7 +81,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
   * @param  customByteLen   The length of the customization string in bytes.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen);
+int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen, int securityLevel);
 
 /**
   * Function to squeeze output data.

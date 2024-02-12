@@ -28,7 +28,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #define K12_rateInBytes     (K12_rate/8)
 #define K12_rateInLanes     (K12_rate/64)
 
-static void TurboSHAKE128_Initialize(TurboSHAKE128_Instance *instance)
+static void TurboSHAKE128_Initialize(TurboSHAKE128_Instance *instance, int securityLevel)
 {
     KeccakP1600_Initialize(instance->state);
     instance->byteIOIndex = 0;
@@ -184,17 +184,17 @@ static unsigned int right_encode(unsigned char * encbuf, size_t value)
     return n + 1;
 }
 
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen)
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen, int securityLevel)
 {
     ktInstance->fixedOutputLength = outputByteLen;
     ktInstance->queueAbsorbedLen = 0;
     ktInstance->blockNumber = 0;
     ktInstance->phase = ABSORBING;
-    TurboSHAKE128_Initialize(&ktInstance->finalNode);
+    TurboSHAKE128_Initialize(&ktInstance->finalNode, securityLevel);
     return 0;
 }
 
-int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen)
+int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen, int securityLevel)
 {
     if (ktInstance->phase != ABSORBING)
         return 1;
@@ -247,7 +247,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
 
     while (inputByteLen > 0) {
         unsigned int len = (inputByteLen < K12_chunkSize) ? (unsigned int)inputByteLen : K12_chunkSize;
-        TurboSHAKE128_Initialize(&ktInstance->queueNode);
+        TurboSHAKE128_Initialize(&ktInstance->queueNode, securityLevel);
         TurboSHAKE128_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inputByteLen -= len;
@@ -265,7 +265,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
     return 0;
 }
 
-int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen)
+int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen, int securityLevel)
 {
     unsigned char encbuf[sizeof(size_t)+1+2];
     unsigned char padding;
@@ -274,9 +274,9 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
         return 1;
 
     /* Absorb customization | right_encode(customByteLen) */
-    if ((customByteLen != 0) && (KangarooTwelve_Update(ktInstance, customization, customByteLen) != 0))
+    if ((customByteLen != 0) && (KangarooTwelve_Update(ktInstance, customization, customByteLen, securityLevel) != 0))
         return 1;
-    if (KangarooTwelve_Update(ktInstance, encbuf, right_encode(encbuf, customByteLen)) != 0)
+    if (KangarooTwelve_Update(ktInstance, encbuf, right_encode(encbuf, customByteLen), securityLevel) != 0)
         return 1;
 
     if (ktInstance->blockNumber == 0) {
@@ -320,14 +320,30 @@ int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *o
 
 int KangarooTwelve(const unsigned char *input, size_t inputByteLen,
                    unsigned char *output, size_t outputByteLen,
-                   const unsigned char *customization, size_t customByteLen)
+                   const unsigned char *customization, size_t customByteLen, int securityLevel)
 {
     KangarooTwelve_Instance ktInstance;
 
     if (outputByteLen == 0)
         return 1;
-    KangarooTwelve_Initialize(&ktInstance, outputByteLen);
-    if (KangarooTwelve_Update(&ktInstance, input, inputByteLen) != 0)
+    KangarooTwelve_Initialize(&ktInstance, outputByteLen, securityLevel);
+    if (KangarooTwelve_Update(&ktInstance, input, inputByteLen, securityLevel) != 0)
         return 1;
-    return KangarooTwelve_Final(&ktInstance, output, customization, customByteLen);
+    return KangarooTwelve_Final(&ktInstance, output, customization, customByteLen, securityLevel);
+}
+
+/* ---------------------------------------------------------------- */
+
+int KangarooTwelve_128(const unsigned char *input, size_t inputByteLen,
+                   unsigned char *output, size_t outputByteLen,
+                   const unsigned char *customization, size_t customByteLen)
+{
+    return KangarooTwelve(input, inputByteLen, output, outputByteLen, customization, customByteLen, 128);
+}
+
+int KangarooTwelve_256(const unsigned char *input, size_t inputByteLen,
+                   unsigned char *output, size_t outputByteLen,
+                   const unsigned char *customization, size_t customByteLen)
+{
+    return KangarooTwelve(input, inputByteLen, output, outputByteLen, customization, customByteLen, 256);
 }
