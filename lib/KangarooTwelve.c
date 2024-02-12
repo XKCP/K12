@@ -21,16 +21,15 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 /* ---------------------------------------------------------------- */
 
+// TODO: compute the values dynamically, based on `instance->rate`
 #define K12_security        128
 #define K12_capacity        (2*K12_security)
 #define K12_capacityInBytes (K12_capacity/8)
-#define K12_rate            (1600-K12_capacity)
-#define K12_rateInBytes     (K12_rate/8)
-#define K12_rateInLanes     (K12_rate/64)
 
 static void TurboSHAKE128_Initialize(TurboSHAKE128_Instance *instance, int securityLevel)
 {
     KeccakP1600_Initialize(instance->state);
+    instance->rate = (1600-(2*securityLevel));
     instance->byteIOIndex = 0;
     instance->squeezing = 0;
 }
@@ -40,7 +39,8 @@ static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigne
     size_t i, j;
     uint8_t partialBlock;
     const unsigned char *curData;
-    const uint8_t rateInBytes = K12_rateInBytes;
+
+    const uint8_t rateInBytes = instance->rate/8;
 
     assert(instance->squeezing == 0);
 
@@ -48,12 +48,15 @@ static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigne
     curData = data;
     while(i < dataByteLen) {
         if ((instance->byteIOIndex == 0) && (dataByteLen-i >= rateInBytes)) {
-#ifdef KeccakP1600_12rounds_FastLoop_supported
-            /* processing full blocks first */
-            j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, K12_rateInLanes, curData, dataByteLen - i);
-            i += j;
-            curData += j;
-#endif
+            // TODO: the below function fails with KT256 because it assumes that the 
+            //  laneCount is 21, however, in the case of KT256, it's 17. So for now,
+            //  I am commenting it till the fix is found.
+// #ifdef KeccakP1600_12rounds_FastLoop_supported
+//             /* processing full blocks first */
+//             j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, instance->rate/64, curData, dataByteLen - i);
+//             i += j;
+//             curData += j;
+// #endif
             for(j=dataByteLen-i; j>=rateInBytes; j-=rateInBytes) {
                 KeccakP1600_AddBytes(instance->state, curData, 0, rateInBytes);
                 KeccakP1600_Permute_12rounds(instance->state);
@@ -82,7 +85,7 @@ static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigne
 
 static void TurboSHAKE128_AbsorbDomainSeparationByte(TurboSHAKE128_Instance *instance, unsigned char D)
 {
-    const unsigned int rateInBytes = K12_rateInBytes;
+    const unsigned int rateInBytes = instance->rate/8;
 
     assert(D != 0);
     assert(instance->squeezing == 0);
@@ -103,7 +106,7 @@ static void TurboSHAKE128_Squeeze(TurboSHAKE128_Instance *instance, unsigned cha
 {
     size_t i, j;
     unsigned int partialBlock;
-    const unsigned int rateInBytes = K12_rateInBytes;
+    const unsigned int rateInBytes = instance->rate/8;
     unsigned char *curData;
 
     if (!instance->squeezing)

@@ -213,10 +213,13 @@ void KeccakP1600_AVX512_Permute_12rounds(void *state)
 /* ---------------------------------------------------------------- */
 
 #include <assert.h>
+#include <stdio.h>
 
 size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen)
 {
     size_t originalDataByteLen = dataByteLen;
+
+    printf("KeccakP1600_AVX512_12rounds_FastLoop_Absorb\n");
 
     assert(laneCount == 21);
 

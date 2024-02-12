@@ -26,6 +26,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 typedef struct TurboSHAKE128_InstanceStruct {
     uint8_t state[KeccakP1600_stateSizeInBytes];
+    unsigned int rate;
     uint8_t byteIOIndex;
     uint8_t squeezing;
 } TurboSHAKE128_Instance;
