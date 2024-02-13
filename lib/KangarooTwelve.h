@@ -74,7 +74,7 @@ int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t output
   * @param  inputByteLen    The number of bytes provided in the input message data.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen, int securityLevel);
+int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen);
 
 /**
   * Function to call after all the input message has been input, and to get
@@ -89,7 +89,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
   * @param  customByteLen   The length of the customization string in bytes.
   * @return 0 if successful, 1 otherwise.
   */
-int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen, int securityLevel);
+int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *output, const unsigned char *customization, size_t customByteLen);
 
 /**
   * Function to squeeze output data.
