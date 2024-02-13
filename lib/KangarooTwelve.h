@@ -22,8 +22,6 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "align.h"
 #include "KeccakP-1600-SnP.h"
 
-// TODO: add the `securityLevel` parameter to the documentation comments
-
 typedef struct TurboSHAKE_InstanceStruct {
     uint8_t state[KeccakP1600_stateSizeInBytes];
     unsigned int rate;
@@ -48,6 +46,7 @@ typedef struct KangarooTwelve_InstanceStruct {
   * @param  outputByteLen   The desired number of output bytes.
   * @param  customization   Pointer to the customization string (C).
   * @param  customByteLen   The length of the customization string in bytes.
+  * @param  securityLevel   The desired security level (128 bits or 256 bits).
   * @return 0 if successful, 1 otherwise.
   */
 int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen, int securityLevel);
@@ -57,6 +56,7 @@ int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned cha
   * @param  ktInstance      Pointer to the instance to be initialized.
   * @param  outputByteLen   The desired number of output bytes,
   *                         or 0 for an arbitrarily-long output.
+  * @param  securityLevel   The desired security level (128 bits or 256 bits).
   * @return 0 if successful, 1 otherwise.
   */
 int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen, int securityLevel);
