@@ -24,20 +24,21 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 // TODO: add the `securityLevel` parameter to the documentation comments
 
-typedef struct TurboSHAKE128_InstanceStruct {
+typedef struct TurboSHAKE_InstanceStruct {
     uint8_t state[KeccakP1600_stateSizeInBytes];
     unsigned int rate;
     uint8_t byteIOIndex;
     uint8_t squeezing;
-} TurboSHAKE128_Instance;
+} TurboSHAKE_Instance;
 
 typedef struct KangarooTwelve_InstanceStruct {
-    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE128_Instance queueNode;
-    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE128_Instance finalNode;
+    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE_Instance queueNode;
+    ALIGN(KeccakP1600_stateAlignment) TurboSHAKE_Instance finalNode;
     size_t fixedOutputLength;
     size_t blockNumber;
     unsigned int queueAbsorbedLen;
     int phase;
+    int securityLevel;
 } KangarooTwelve_Instance;
 
 /** Extendable ouput function KangarooTwelve.
@@ -59,6 +60,12 @@ int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned cha
   * @return 0 if successful, 1 otherwise.
   */
 int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen, int securityLevel);
+
+#define KT128_Initialize(instance, outputByteLen) \
+    KangarooTwelve_Initialize((instance), (outputByteLen), 128);
+
+#define KT256_Initialize(instance, outputByteLen) \
+    KangarooTwelve_Initialize((instance), (outputByteLen), 256);
 
 /**
   * Function to give input data to be absorbed.
