@@ -219,26 +219,33 @@ size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int lan
 {
     size_t originalDataByteLen = dataByteLen;
 
-    printf("KeccakP1600_AVX512_12rounds_FastLoop_Absorb\n");
-
-    assert(laneCount == 21);
+    assert(laneCount == 21 || laneCount == 17);
 
     KeccakP_DeclareVars;
     uint64_t *stateAsLanes = (uint64_t*)state;
     uint64_t *inDataAsLanes = (uint64_t*)data;
 
-    copyFromState(stateAsLanes);
-    while(dataByteLen >= 21*8) {
-        Baeiou = XOR(Baeiou, LOAD_Plane(inDataAsLanes+ 0));
-        Gaeiou = XOR(Gaeiou, LOAD_Plane(inDataAsLanes+ 5));
-        Kaeiou = XOR(Kaeiou, LOAD_Plane(inDataAsLanes+10));
-        Maeiou = XOR(Maeiou, LOAD_Plane(inDataAsLanes+15));
-        Saeiou = XOR(Saeiou, LOAD_Lane(inDataAsLanes+20));
-        rounds12;
-        inDataAsLanes += 21;
-        dataByteLen -= 21*8;
+    if (laneCount == 21) {
+        copyFromState(stateAsLanes);
+        while(dataByteLen >= 21*8) {
+            Baeiou = XOR(Baeiou, LOAD_Plane(inDataAsLanes+ 0));
+            Gaeiou = XOR(Gaeiou, LOAD_Plane(inDataAsLanes+ 5));
+            Kaeiou = XOR(Kaeiou, LOAD_Plane(inDataAsLanes+10));
+            Maeiou = XOR(Maeiou, LOAD_Plane(inDataAsLanes+15));
+            Saeiou = XOR(Saeiou, LOAD_Lane(inDataAsLanes+20));
+            rounds12;
+            inDataAsLanes += 21;
+            dataByteLen -= 21*8;
+        }
+        copyToState(stateAsLanes);
+    } else if (laneCount == 17) {
+        while(dataByteLen >= laneCount*8) {
+            KeccakP1600_AddBytes(state, data, 0, laneCount*8);
+            KeccakP1600_Permute_12rounds(state);
+            data += laneCount*8;
+            dataByteLen -= laneCount*8;
+        }
     }
-    copyToState(stateAsLanes);
 
     return originalDataByteLen - dataByteLen;
 }

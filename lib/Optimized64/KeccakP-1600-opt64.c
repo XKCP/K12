@@ -999,7 +999,6 @@ void KeccakP1600_opt64_ExtractBytes(const void *state, unsigned char *data, unsi
     } \
 
 #include <assert.h>
-#include <stdio.h>
 
 size_t KeccakP1600_opt64_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen)
 {
@@ -1012,18 +1011,25 @@ size_t KeccakP1600_opt64_12rounds_FastLoop_Absorb(void *state, unsigned int lane
     uint64_t *stateAsLanes = (uint64_t*)state;
     uint64_t *inDataAsLanes = (uint64_t*)data;
 
-    // note: for KT256, laneCount will be 17
-    // assert(laneCount == 21);
+    assert(laneCount == 21 || laneCount == 17);
 
-    // #define laneCount 21
-    copyFromState(A, stateAsLanes)
-    while(dataByteLen >= laneCount*8) {
-        addInput(A, inDataAsLanes, laneCount)
-        rounds12
-        inDataAsLanes += laneCount;
-        dataByteLen -= laneCount*8;
+    if (laneCount == 21) {
+        copyFromState(A, stateAsLanes)
+        while(dataByteLen >= laneCount*8) {
+            addInput(A, inDataAsLanes, laneCount)
+            rounds12
+            inDataAsLanes += laneCount;
+            dataByteLen -= laneCount*8;
+        }
+        copyToState(stateAsLanes, A)
+    } else if (laneCount == 17) {
+        while(dataByteLen >= laneCount*8) {
+            KeccakP1600_AddBytes(state, data, 0, laneCount*8);
+            KeccakP1600_Permute_12rounds(state);
+            data += laneCount*8;
+            dataByteLen -= laneCount*8;
+        }
     }
-    // #undef laneCount
-    copyToState(stateAsLanes, A)
+    
     return originalDataByteLen - dataByteLen;
 }

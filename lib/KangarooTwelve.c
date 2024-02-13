@@ -43,15 +43,12 @@ static void TurboSHAKE_Absorb(TurboSHAKE_Instance *instance, const unsigned char
     curData = data;
     while(i < dataByteLen) {
         if ((instance->byteIOIndex == 0) && (dataByteLen-i >= rateInBytes)) {
-            // TODO: the below function fails with KT256 because it assumes that the 
-            //  laneCount is 21, however, in the case of KT256, it's 17. So for now,
-            //  I am commenting it till the fix is found.
-// #ifdef KeccakP1600_12rounds_FastLoop_supported
-//             /* processing full blocks first */
-//             j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, instance->rate/64, curData, dataByteLen - i);
-//             i += j;
-//             curData += j;
-// #endif
+#ifdef KeccakP1600_12rounds_FastLoop_supported
+            /* processing full blocks first */
+            j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, instance->rate/64, curData, dataByteLen - i);
+            i += j;
+            curData += j;
+#endif
             for(j=dataByteLen-i; j>=rateInBytes; j-=rateInBytes) {
                 KeccakP1600_AddBytes(instance->state, curData, 0, rateInBytes);
                 KeccakP1600_Permute_12rounds(instance->state);
