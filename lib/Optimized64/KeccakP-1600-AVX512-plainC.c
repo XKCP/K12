@@ -213,7 +213,6 @@ void KeccakP1600_AVX512_Permute_12rounds(void *state)
 /* ---------------------------------------------------------------- */
 
 #include <assert.h>
-#include <stdio.h>
 
 size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen)
 {
@@ -226,6 +225,7 @@ size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int lan
     uint64_t *inDataAsLanes = (uint64_t*)data;
 
     if (laneCount == 21) {
+        #define laneCount 21
         copyFromState(stateAsLanes);
         while(dataByteLen >= 21*8) {
             Baeiou = XOR(Baeiou, LOAD_Plane(inDataAsLanes+ 0));
@@ -237,8 +237,10 @@ size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int lan
             inDataAsLanes += 21;
             dataByteLen -= 21*8;
         }
+        #undef laneCount
         copyToState(stateAsLanes);
     } else if (laneCount == 17) {
+        // TODO: hardcode `laneCount` for 17?
         while(dataByteLen >= laneCount*8) {
             KeccakP1600_AddBytes(state, data, 0, laneCount*8);
             KeccakP1600_Permute_12rounds(state);
