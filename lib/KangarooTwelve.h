@@ -52,6 +52,16 @@ typedef struct KangarooTwelve_InstanceStruct {
 int KangarooTwelve(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen, int securityLevel);
 
 /**
+ * Wrapper around `KangarooTwelve` to use the 128-bit security level.
+*/
+int KT128(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen);
+
+/**
+ * Wrapper around `KangarooTwelve` to use the 256-bit security level.
+*/
+int KT256(const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen);
+
+/**
   * Function to initialize a KangarooTwelve instance.
   * @param  ktInstance      Pointer to the instance to be initialized.
   * @param  outputByteLen   The desired number of output bytes,
