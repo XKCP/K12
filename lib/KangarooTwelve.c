@@ -157,7 +157,7 @@ void KT128_Process8Leaves(const unsigned char *input, unsigned char *output);
     while (inputByteLen >= Parallellism * K12_chunkSize) { \
         unsigned char intermediate[Parallellism * CapacityInBytes]; \
         \
-        KangarooTwelve_Process##Parallellism##Leaves(input, intermediate); \
+        KT128##Parallellism##Leaves(input, intermediate); \
         input += Parallellism * K12_chunkSize; \
         inputByteLen -= Parallellism * K12_chunkSize; \
         ktInstance->blockNumber += Parallellism; \
