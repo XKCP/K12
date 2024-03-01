@@ -363,9 +363,12 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq256(X##ku, LOAD4_64((data3)[14], (data2)[14], (data1)[14], (data0)[14])); \
     XOReq256(X##ma, LOAD4_64((data3)[15], (data2)[15], (data1)[15], (data0)[15])); \
 
-#define XORdata21(X, data0, data1, data2, data3) \
+#define XORdata17(X, data0, data1, data2, data3) \
     XORdata16(X, data0, data1, data2, data3) \
     XOReq256(X##me, LOAD4_64((data3)[16], (data2)[16], (data1)[16], (data0)[16])); \
+
+#define XORdata21(X, data0, data1, data2, data3) \
+    XORdata17(X, data0, data1, data2, data3) \
     XOReq256(X##mi, LOAD4_64((data3)[17], (data2)[17], (data1)[17], (data0)[17])); \
     XOReq256(X##mo, LOAD4_64((data3)[18], (data2)[18], (data1)[18], (data0)[18])); \
     XOReq256(X##mu, LOAD4_64((data3)[19], (data2)[19], (data1)[19], (data0)[19])); \
@@ -430,7 +433,7 @@ void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output
     initializeState(A);
 
     for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
-        XORdata21(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+        XORdata17(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
         rounds12
         input += KT256_rateInBytes;
     }
@@ -440,6 +443,7 @@ void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output
     XOReq256(Ago, CONST256_64(0x8000000000000000ULL));
 
     {
+        // TODO: extract the chaining value:
         // 4 leaves, and 512 bits for each -> 2048 bits = 8 * 256 bits
         // so output will have to fill output[0] to output[224]
     }

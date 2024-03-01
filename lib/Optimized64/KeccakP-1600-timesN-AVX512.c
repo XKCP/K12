@@ -215,8 +215,7 @@ static ALIGN(AVX512alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq(X##me, LOAD6464((data1)[16], (data0)[16])); \
 
 #define XORdata21(X, data0, data1) \
-    XORdata16(X, data0, data1) \
-    XOReq(X##me, LOAD6464((data1)[16], (data0)[16])); \
+    XORdata17(X, data0, data1) \
     XOReq(X##mi, LOAD6464((data1)[17], (data0)[17])); \
     XOReq(X##mo, LOAD6464((data1)[18], (data0)[18])); \
     XOReq(X##mu, LOAD6464((data1)[19], (data0)[19])); \
@@ -290,7 +289,9 @@ void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *outp
 #undef UNPACKL
 #undef UNPACKH
 #undef ZERO
+#undef XORdata4
 #undef XORdata16
+#undef XORdata17
 #undef XORdata21
 
 
@@ -307,11 +308,14 @@ void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *outp
 #define ZERO()                      _mm256_setzero_si256()
 #define LOAD4_64(a, b, c, d)    _mm256_set_epi64x((uint64_t)(a), (uint64_t)(b), (uint64_t)(c), (uint64_t)(d))
 
-#define XORdata16(X, data0, data1, data2, data3) \
+#define XORdata4(X, data0, data1, data2, data3) \
     XOReq(X##ba, LOAD4_64((data3)[ 0], (data2)[ 0], (data1)[ 0], (data0)[ 0])); \
     XOReq(X##be, LOAD4_64((data3)[ 1], (data2)[ 1], (data1)[ 1], (data0)[ 1])); \
     XOReq(X##bi, LOAD4_64((data3)[ 2], (data2)[ 2], (data1)[ 2], (data0)[ 2])); \
     XOReq(X##bo, LOAD4_64((data3)[ 3], (data2)[ 3], (data1)[ 3], (data0)[ 3])); \
+
+#define XORdata16(X, data0, data1, data2, data3) \
+    XORdata4(X, data0, data1, data2, data3) \
     XOReq(X##bu, LOAD4_64((data3)[ 4], (data2)[ 4], (data1)[ 4], (data0)[ 4])); \
     XOReq(X##ga, LOAD4_64((data3)[ 5], (data2)[ 5], (data1)[ 5], (data0)[ 5])); \
     XOReq(X##ge, LOAD4_64((data3)[ 6], (data2)[ 6], (data1)[ 6], (data0)[ 6])); \
@@ -325,9 +329,12 @@ void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *outp
     XOReq(X##ku, LOAD4_64((data3)[14], (data2)[14], (data1)[14], (data0)[14])); \
     XOReq(X##ma, LOAD4_64((data3)[15], (data2)[15], (data1)[15], (data0)[15])); \
 
-#define XORdata21(X, data0, data1, data2, data3) \
+#define XORdata17(X, data0, data1, data2, data3) \
     XORdata16(X, data0, data1, data2, data3) \
     XOReq(X##me, LOAD4_64((data3)[16], (data2)[16], (data1)[16], (data0)[16])); \
+
+#define XORdata21(X, data0, data1, data2, data3) \
+    XORdata17(X, data0, data1, data2, data3) \
     XOReq(X##mi, LOAD4_64((data3)[17], (data2)[17], (data1)[17], (data0)[17])); \
     XOReq(X##mo, LOAD4_64((data3)[18], (data2)[18], (data1)[18], (data0)[18])); \
     XOReq(X##mu, LOAD4_64((data3)[19], (data2)[19], (data1)[19], (data0)[19])); \
@@ -374,6 +381,27 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
 */
 }
 
+void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+    KeccakP_DeclareVars(__m256i);
+    unsigned int j;
+
+    initializeState(_);
+
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata17(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+    XOReq(_bu, CONST_64(0x0BULL));
+    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    rounds12
+
+    // TODO: extract the 512 * 4 bits of CV into the output
+}
+
 #undef XOR
 #undef XOReq
 #undef XOR3
@@ -384,7 +412,9 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
 #undef CONST_64
 #undef ZERO
 #undef LOAD4_64
+#undef XORdata4
 #undef XORdata16
+#undef XORdata17
 #undef XORdata21
 
 
@@ -435,12 +465,17 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
     r6 = _mm512_shuffle_i32x4(t2, t6, 0xdd); \
     r7 = _mm512_shuffle_i32x4(t3, t7, 0xdd); \
 
-#define XORdata16(X, index, dataAsLanes) \
+// TODO: verify if the XORdata4 is implemented correctly,
+//  namely, the call to `LoadAndTranspose8`, is it good?
+#define XORdata4(X, index, dataAsLanes) \
     LoadAndTranspose8(dataAsLanes, 0) \
     XOReq(X##ba, r0); \
     XOReq(X##be, r1); \
     XOReq(X##bi, r2); \
     XOReq(X##bo, r3); \
+
+#define XORdata16(X, index, dataAsLanes) \
+    XORdata4(X, index, dataAsLanes) \
     XOReq(X##bu, r4); \
     XOReq(X##ga, r5); \
     XOReq(X##ge, r6); \
@@ -455,9 +490,12 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
     XOReq(X##ku, r6); \
     XOReq(X##ma, r7); \
 
-#define XORdata21(X, index, dataAsLanes) \
+#define XORdata17(X, index, dataAsLanes) \
     XORdata16(X, index, dataAsLanes) \
     XOReq(X##me, LOAD_GATHER8_64(index, (dataAsLanes) + 16)); \
+
+#define XORdata21(X, index, dataAsLanes) \
+    XORdata17(X, index, dataAsLanes) \
     XOReq(X##mi, LOAD_GATHER8_64(index, (dataAsLanes) + 17)); \
     XOReq(X##mo, LOAD_GATHER8_64(index, (dataAsLanes) + 18)); \
     XOReq(X##mu, LOAD_GATHER8_64(index, (dataAsLanes) + 19)); \
@@ -491,4 +529,38 @@ void KangarooTwelve_AVX512_Process8Leaves(const unsigned char *input, unsigned c
     STORE_SCATTER8_64(outputAsLanes+1, index, _be);
     STORE_SCATTER8_64(outputAsLanes+2, index, _bi);
     STORE_SCATTER8_64(outputAsLanes+3, index, _bo);
+}
+
+void KT256_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output)
+{
+    KeccakP_DeclareVars(__m512i);
+    unsigned int j;
+    const uint64_t *outputAsLanes = (const uint64_t *)output;
+    __m256i index;
+    __m512i t0, t1, t2, t3, t4, t5, t6, t7;
+    __m512i r0, r1, r2, r3, r4, r5, r6, r7;
+
+    initializeState(_);
+
+    index = LOAD8_32(7*(chunkSize / 8), 6*(chunkSize / 8), 5*(chunkSize / 8), 4*(chunkSize / 8), 3*(chunkSize / 8), 2*(chunkSize / 8), 1*(chunkSize / 8), 0*(chunkSize / 8));
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata17(_, index, (const uint64_t *)input);
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(_, index, (const uint64_t *)input);
+    XOReq(_bu, CONST_64(0x0BULL));
+    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    rounds12
+
+    index = LOAD8_32(7*4, 6*4, 5*4, 4*4, 3*4, 2*4, 1*4, 0*4);
+    STORE_SCATTER8_64(outputAsLanes+0, index, _ba);
+    STORE_SCATTER8_64(outputAsLanes+1, index, _be);
+    STORE_SCATTER8_64(outputAsLanes+2, index, _bi);
+    STORE_SCATTER8_64(outputAsLanes+3, index, _bo);
+    STORE_SCATTER8_64(outputAsLanes+4, index, _bu);
+    STORE_SCATTER8_64(outputAsLanes+5, index, _ga);
+    STORE_SCATTER8_64(outputAsLanes+6, index, _ge);
+    STORE_SCATTER8_64(outputAsLanes+7, index, _gi);
 }
