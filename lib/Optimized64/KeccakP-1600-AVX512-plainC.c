@@ -240,7 +240,7 @@ size_t KeccakP1600_AVX512_12rounds_FastLoop_Absorb(void *state, unsigned int lan
         #undef laneCount
         copyToState(stateAsLanes);
     } else if (laneCount == 17) {
-        // TODO: this case was untested.
+        // TODO: further optimization needed for this case, laneCount == 17.
         while(dataByteLen >= laneCount*8) {
             KeccakP1600_AddBytes(state, data, 0, laneCount*8);
             KeccakP1600_Permute_12rounds(state);
