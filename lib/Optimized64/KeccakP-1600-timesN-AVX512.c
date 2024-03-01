@@ -465,17 +465,18 @@ void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *outp
     r6 = _mm512_shuffle_i32x4(t2, t6, 0xdd); \
     r7 = _mm512_shuffle_i32x4(t3, t7, 0xdd); \
 
-// TODO: verify if the XORdata4 is implemented correctly,
-//  namely, the call to `LoadAndTranspose8`, is it good?
 #define XORdata4(X, index, dataAsLanes) \
+    XOReq(X##ba, LOAD_GATHER8_64(index, (dataAsLanes) + 0)); \
+    XOReq(X##be, LOAD_GATHER8_64(index, (dataAsLanes) + 1)); \
+    XOReq(X##bi, LOAD_GATHER8_64(index, (dataAsLanes) + 2)); \
+    XOReq(X##bo, LOAD_GATHER8_64(index, (dataAsLanes) + 3)); \
+
+#define XORdata16(X, index, dataAsLanes) \
     LoadAndTranspose8(dataAsLanes, 0) \
     XOReq(X##ba, r0); \
     XOReq(X##be, r1); \
     XOReq(X##bi, r2); \
     XOReq(X##bo, r3); \
-
-#define XORdata16(X, index, dataAsLanes) \
-    XORdata4(X, index, dataAsLanes) \
     XOReq(X##bu, r4); \
     XOReq(X##ga, r5); \
     XOReq(X##ge, r6); \
