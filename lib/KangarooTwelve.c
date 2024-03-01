@@ -16,6 +16,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include "KangarooTwelve.h"
 #include "KeccakP-1600-SnP.h"
 
@@ -148,16 +149,27 @@ typedef KCP_Phases KangarooTwelve_Phases;
 
 #ifndef KeccakP1600_disableParallelism
 
-// TODO: create the KT256_Process{n}Leaves variations and wire them up
 void KT128_Process2Leaves(const unsigned char *input, unsigned char *output);
 void KT128_Process4Leaves(const unsigned char *input, unsigned char *output);
 void KT128_Process8Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process8Leaves(const unsigned char *input, unsigned char *output);
 
 #define ProcessLeaves( Parallellism, CapacityInBytes ) \
-    while (inputByteLen >= Parallellism * K12_chunkSize) { \
+    assert(CapacityInBytes == 32 || CapacityInBytes == 64); \
+    if( CapacityInBytes == 32 ) { \
+         unsigned char intermediate[Parallellism * CapacityInBytes]; \
+        \
+        KT128##Process##Parallellism##Leaves(input, intermediate); \
+        input += Parallellism * K12_chunkSize; \
+        inputByteLen -= Parallellism * K12_chunkSize; \
+        ktInstance->blockNumber += Parallellism; \
+        TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+    } else { \
         unsigned char intermediate[Parallellism * CapacityInBytes]; \
         \
-        KT128##Parallellism##Leaves(input, intermediate); \
+        KT256##Process##Parallellism##Leaves(input, intermediate); \
         input += Parallellism * K12_chunkSize; \
         inputByteLen -= Parallellism * K12_chunkSize; \
         ktInstance->blockNumber += Parallellism; \
