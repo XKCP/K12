@@ -973,7 +973,6 @@ void KeccakP1600_opt64_ExtractBytes(const void *state, unsigned char *data, unsi
   ((x & 0x00000000000000ffull) << 56))
 #endif
 
-#define addInput(X, input, laneCount) \
 #define addInput21(X, input, laneCount) \
     if (laneCount == 21) { \
         X##ba ^= HTOLE64(input[ 0]); \
