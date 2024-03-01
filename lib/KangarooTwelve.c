@@ -148,6 +148,7 @@ typedef KCP_Phases KangarooTwelve_Phases;
 
 #ifndef KeccakP1600_disableParallelism
 
+// TODO: rename the blow functions to KT128_Process{n}Leaves and, create the KT256_Process{n}Leaves variations.
 void KangarooTwelve_Process2Leaves(const unsigned char *input, unsigned char *output);
 void KangarooTwelve_Process4Leaves(const unsigned char *input, unsigned char *output);
 void KangarooTwelve_Process8Leaves(const unsigned char *input, unsigned char *output);

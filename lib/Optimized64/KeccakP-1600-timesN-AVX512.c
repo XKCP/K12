@@ -189,11 +189,14 @@ static ALIGN(AVX512alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     X##so = ZERO(); \
     X##su = ZERO(); \
 
-#define XORdata16(X, data0, data1) \
+#define XORdata4(X, data0, data1) \
     XOReq(X##ba, LOAD6464((data1)[ 0], (data0)[ 0])); \
     XOReq(X##be, LOAD6464((data1)[ 1], (data0)[ 1])); \
     XOReq(X##bi, LOAD6464((data1)[ 2], (data0)[ 2])); \
     XOReq(X##bo, LOAD6464((data1)[ 3], (data0)[ 3])); \
+
+#define XORdata16(X, data0, data1) \
+    XORdata4(X, data0, data1) \
     XOReq(X##bu, LOAD6464((data1)[ 4], (data0)[ 4])); \
     XOReq(X##ga, LOAD6464((data1)[ 5], (data0)[ 5])); \
     XOReq(X##ge, LOAD6464((data1)[ 6], (data0)[ 6])); \
@@ -207,6 +210,10 @@ static ALIGN(AVX512alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq(X##ku, LOAD6464((data1)[14], (data0)[14])); \
     XOReq(X##ma, LOAD6464((data1)[15], (data0)[15])); \
 
+#define XORdata17(X, data0, data1) \
+    XORdata16(X, data0, data1) \
+    XOReq(X##me, LOAD6464((data1)[16], (data0)[16])); \
+
 #define XORdata21(X, data0, data1) \
     XORdata16(X, data0, data1) \
     XOReq(X##me, LOAD6464((data1)[16], (data0)[16])); \
@@ -216,7 +223,8 @@ static ALIGN(AVX512alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq(X##sa, LOAD6464((data1)[20], (data0)[20])); \
 
 #define chunkSize 8192
-#define rateInBytes (21*8)
+#define KT128_rateInBytes (21*8)
+#define KT256_rateInBytes (17*8)
 
 void KangarooTwelve_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output)
 {
@@ -225,10 +233,10 @@ void KangarooTwelve_AVX512_Process2Leaves(const unsigned char *input, unsigned c
 
     initializeState(_);
 
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
@@ -240,6 +248,34 @@ void KangarooTwelve_AVX512_Process2Leaves(const unsigned char *input, unsigned c
     STORE128u( *(__m128i*)&(output[16]), UNPACKL( _bi, _bo ) );
     STORE128u( *(__m128i*)&(output[32]), UNPACKH( _ba, _be ) );
     STORE128u( *(__m128i*)&(output[48]), UNPACKH( _bi, _bo ) );
+}
+
+void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output)
+{
+    KeccakP_DeclareVars(__m128i);
+    unsigned int j;
+
+    initializeState(_);
+
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata17(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
+    XOReq(_bu, CONST_64(0x0BULL));
+    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    rounds12
+
+    STORE128u( *(__m128i*)&(output[ 0]), UNPACKL( _ba, _be ) );
+    STORE128u( *(__m128i*)&(output[16]), UNPACKL( _bi, _bo ) );
+    STORE128u( *(__m128i*)&(output[32]), UNPACKL( _bu, _ga ) );
+    STORE128u( *(__m128i*)&(output[48]), UNPACKL( _ge, _gi ) );
+    STORE128u( *(__m128i*)&(output[64]), UNPACKH( _ba, _be ) );
+    STORE128u( *(__m128i*)&(output[80]), UNPACKH( _bi, _bo ) );
+    STORE128u( *(__m128i*)&(output[96]), UNPACKH( _bu, _ga ) );
+    STORE128u( *(__m128i*)&(output[112]), UNPACKH( _ge, _gi ) );
 }
 
 #undef XOR
@@ -304,10 +340,10 @@ void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned c
 
     initializeState(_);
 
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
@@ -439,10 +475,10 @@ void KangarooTwelve_AVX512_Process8Leaves(const unsigned char *input, unsigned c
     initializeState(_);
 
     index = LOAD8_32(7*(chunkSize / 8), 6*(chunkSize / 8), 5*(chunkSize / 8), 4*(chunkSize / 8), 3*(chunkSize / 8), 2*(chunkSize / 8), 1*(chunkSize / 8), 0*(chunkSize / 8));
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(_, index, (const uint64_t *)input);
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(_, index, (const uint64_t *)input);
