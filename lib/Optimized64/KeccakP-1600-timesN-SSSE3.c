@@ -331,6 +331,12 @@ static ALIGN(SSSE3alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     X##so = ZERO(); \
     X##su = ZERO(); \
 
+#define XORdata4(X, data0, data1) \
+    XOReq128(X##ba, LOAD6464((data1)[ 0], (data0)[ 0])); \
+    XOReq128(X##be, LOAD6464((data1)[ 1], (data0)[ 1])); \
+    XOReq128(X##bi, LOAD6464((data1)[ 2], (data0)[ 2])); \
+    XOReq128(X##bo, LOAD6464((data1)[ 3], (data0)[ 3])); \
+
 #define XORdata16(X, data0, data1) \
     XOReq128(X##ba, LOAD6464((data1)[ 0], (data0)[ 0])); \
     XOReq128(X##be, LOAD6464((data1)[ 1], (data0)[ 1])); \
@@ -349,9 +355,12 @@ static ALIGN(SSSE3alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq128(X##ku, LOAD6464((data1)[14], (data0)[14])); \
     XOReq128(X##ma, LOAD6464((data1)[15], (data0)[15])); \
 
-#define XORdata21(X, data0, data1) \
+#define XORdata17(X, data0, data1) \
     XORdata16(X, data0, data1) \
     XOReq128(X##me, LOAD6464((data1)[16], (data0)[16])); \
+
+#define XORdata21(X, data0, data1) \
+    XORdata17(X, data0, data1) \
     XOReq128(X##mi, LOAD6464((data1)[17], (data0)[17])); \
     XOReq128(X##mo, LOAD6464((data1)[18], (data0)[18])); \
     XOReq128(X##mu, LOAD6464((data1)[19], (data0)[19])); \
@@ -408,7 +417,8 @@ static ALIGN(SSSE3alignment) const uint64_t KeccakP1600RoundConstants[24] = {
 #endif
 
 #define chunkSize 8192
-#define rateInBytes (21*8)
+#define KT128_rateInBytes (21*8)
+#define KT256_rateInBytes (17*8)
 
 void KT128_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output)
 {
@@ -420,10 +430,10 @@ void KT128_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *outpu
 
     initializeState(A);
 
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
@@ -437,4 +447,33 @@ void KT128_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *outpu
     STORE128u( *(__m128i*)&(output[48]), UNPACKH( Abi, Abo ) );
 }
 
-// TODO: add KT256_SSE3_Process2Leaves
+void KT256_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output)
+{
+    declareABCDE
+    #ifndef KeccakP1600times2_SSSE3_fullUnrolling
+    unsigned int i;
+    #endif
+    unsigned int j;
+
+    initializeState(A);
+
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata17(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
+    XOReq128(Abu, _mm_set1_epi64x(0x0BULL));
+    XOReq128(Ago, _mm_set1_epi64x(0x8000000000000000ULL));
+    rounds12
+
+    STORE128u( *(__m128i*)&(output[ 0]), UNPACKL( Aba, Abe ) );
+    STORE128u( *(__m128i*)&(output[16]), UNPACKL( Abi, Abo ) );
+    STORE128u( *(__m128i*)&(output[32]), UNPACKL( Abu, Aga ) );
+    STORE128u( *(__m128i*)&(output[48]), UNPACKL( Age, Agi ) );
+    STORE128u( *(__m128i*)&(output[64]), UNPACKH( Aba, Abe ) );
+    STORE128u( *(__m128i*)&(output[80]), UNPACKH( Abi, Abo ) );
+    STORE128u( *(__m128i*)&(output[96]), UNPACKH( Abu, Aga ) );
+    STORE128u( *(__m128i*)&(output[112]), UNPACKH( Age, Agi ) );
+}
