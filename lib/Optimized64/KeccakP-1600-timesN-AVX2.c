@@ -342,11 +342,14 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     X##so = ZERO(); \
     X##su = ZERO(); \
 
-#define XORdata16(X, data0, data1, data2, data3) \
+#define XORdata4(X, data0, data1, data2, data3) \
     XOReq256(X##ba, LOAD4_64((data3)[ 0], (data2)[ 0], (data1)[ 0], (data0)[ 0])); \
     XOReq256(X##be, LOAD4_64((data3)[ 1], (data2)[ 1], (data1)[ 1], (data0)[ 1])); \
     XOReq256(X##bi, LOAD4_64((data3)[ 2], (data2)[ 2], (data1)[ 2], (data0)[ 2])); \
     XOReq256(X##bo, LOAD4_64((data3)[ 3], (data2)[ 3], (data1)[ 3], (data0)[ 3])); \
+
+#define XORdata16(X, data0, data1, data2, data3) \
+    XORdata4(X, data0, data1, data2, data3) \
     XOReq256(X##bu, LOAD4_64((data3)[ 4], (data2)[ 4], (data1)[ 4], (data0)[ 4])); \
     XOReq256(X##ga, LOAD4_64((data3)[ 5], (data2)[ 5], (data1)[ 5], (data0)[ 5])); \
     XOReq256(X##ge, LOAD4_64((data3)[ 6], (data2)[ 6], (data1)[ 6], (data0)[ 6])); \
@@ -384,7 +387,8 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     thetaRhoPiChiIota(23, E, A)
 
 #define chunkSize 8192
-#define rateInBytes (21*8)
+#define KT128_rateInBytes (21*8)
+#define KT256_rateInBytes (17*8)
 
 void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
@@ -393,10 +397,10 @@ void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned cha
 
     initializeState(A);
 
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
@@ -415,5 +419,28 @@ void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned cha
         STORE256u( output[32], PERM128( lanesH01, lanesH23, 0x20 ) );
         STORE256u( output[64], PERM128( lanesL01, lanesL23, 0x31 ) );
         STORE256u( output[96], PERM128( lanesH01, lanesH23, 0x31 ) );
+    }
+}
+
+void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+    declareABCDE
+    unsigned int j;
+
+    initializeState(A);
+
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata21(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+    XOReq256(Abu, CONST256_64(0x0BULL));
+    XOReq256(Ago, CONST256_64(0x8000000000000000ULL));
+
+    {
+        // 4 leaves, and 512 bits for each -> 2048 bits = 8 * 256 bits
+        // so output will have to fill output[0] to output[224]
     }
 }
