@@ -393,7 +393,7 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
 #define KT128_rateInBytes (21*8)
 #define KT256_rateInBytes (17*8)
 
-void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
+void KT128_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
     declareABCDE
     unsigned int j;

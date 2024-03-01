@@ -225,7 +225,7 @@ static ALIGN(AVX512alignment) const uint64_t KeccakP1600RoundConstants[24] = {
 #define KT128_rateInBytes (21*8)
 #define KT256_rateInBytes (17*8)
 
-void KangarooTwelve_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output)
+void KT128_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output)
 {
     KeccakP_DeclareVars(__m128i);
     unsigned int j;
@@ -340,7 +340,7 @@ void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *outp
     XOReq(X##mu, LOAD4_64((data3)[19], (data2)[19], (data1)[19], (data0)[19])); \
     XOReq(X##sa, LOAD4_64((data3)[20], (data2)[20], (data1)[20], (data0)[20])); \
 
-void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output)
+void KT128_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
     KeccakP_DeclareVars(__m256i);
     unsigned int j;
@@ -501,7 +501,7 @@ void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *outp
     XOReq(X##mu, LOAD_GATHER8_64(index, (dataAsLanes) + 19)); \
     XOReq(X##sa, LOAD_GATHER8_64(index, (dataAsLanes) + 20)); \
 
-void KangarooTwelve_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output)
+void KT128_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output)
 {
     KeccakP_DeclareVars(__m512i);
     unsigned int j;

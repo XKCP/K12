@@ -410,7 +410,7 @@ static ALIGN(SSSE3alignment) const uint64_t KeccakP1600RoundConstants[24] = {
 #define chunkSize 8192
 #define rateInBytes (21*8)
 
-void KangarooTwelve_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output)
+void KT128_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output)
 {
     declareABCDE
     #ifndef KeccakP1600times2_SSSE3_fullUnrolling
@@ -436,3 +436,5 @@ void KangarooTwelve_SSSE3_Process2Leaves(const unsigned char *input, unsigned ch
     STORE128u( *(__m128i*)&(output[32]), UNPACKH( Aba, Abe ) );
     STORE128u( *(__m128i*)&(output[48]), UNPACKH( Abi, Abo ) );
 }
+
+// TODO: add KT256_SSE3_Process2Leaves
