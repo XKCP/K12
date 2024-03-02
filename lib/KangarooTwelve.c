@@ -16,7 +16,6 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 #include <assert.h>
 #include <string.h>
-#include <stdio.h>
 #include "KangarooTwelve.h"
 #include "KeccakP-1600-SnP.h"
 
