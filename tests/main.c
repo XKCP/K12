@@ -43,7 +43,7 @@ void bench1GB()
     #define INPUT_SIZE 1000000000
     static ALIGN(64) unsigned char input[INPUT_SIZE];
     static ALIGN(64) unsigned char output[32];
-    KangarooTwelve(input, INPUT_SIZE, output, 32, 0, 0);
+    KT128(input, INPUT_SIZE, output, 32, 0, 0);
     #undef INPUT_SIZE
 }
 #endif
