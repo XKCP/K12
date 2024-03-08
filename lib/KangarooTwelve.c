@@ -197,7 +197,7 @@ static unsigned int right_encode(unsigned char * encbuf, size_t value)
     return n + 1;
 }
 
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen, int securityLevel)
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen)
 {
     ktInstance->fixedOutputLength = outputByteLen;
     ktInstance->queueAbsorbedLen = 0;
@@ -337,15 +337,15 @@ int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *o
     return 0;
 }
 
-int KangarooTwelve(const unsigned char *input, size_t inputByteLen,
+int KangarooTwelve(int securityLevel, const unsigned char *input, size_t inputByteLen,
                    unsigned char *output, size_t outputByteLen,
-                   const unsigned char *customization, size_t customByteLen, int securityLevel)
+                   const unsigned char *customization, size_t customByteLen)
 {
     KangarooTwelve_Instance ktInstance;
 
     if (outputByteLen == 0)
         return 1;
-    KangarooTwelve_Initialize(&ktInstance, outputByteLen, securityLevel);
+    KangarooTwelve_Initialize(&ktInstance, securityLevel, outputByteLen);
     if (KangarooTwelve_Update(&ktInstance, input, inputByteLen) != 0)
         return 1;
     return KangarooTwelve_Final(&ktInstance, output, customization, customByteLen);
@@ -357,12 +357,12 @@ int KT128(const unsigned char *input, size_t inputByteLen,
                    unsigned char *output, size_t outputByteLen,
                    const unsigned char *customization, size_t customByteLen)
 {
-    return KangarooTwelve(input, inputByteLen, output, outputByteLen, customization, customByteLen, 128);
+    return KangarooTwelve(128, input, inputByteLen, output, outputByteLen, customization, customByteLen);
 }
 
 int KT256(const unsigned char *input, size_t inputByteLen,
                    unsigned char *output, size_t outputByteLen,
                    const unsigned char *customization, size_t customByteLen)
 {
-    return KangarooTwelve(input, inputByteLen, output, outputByteLen, customization, customByteLen, 256);
+    return KangarooTwelve(256, input, inputByteLen, output, outputByteLen, customization, customByteLen);
 }
