@@ -264,7 +264,7 @@ void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *outp
 
     XORdata4(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
     XOReq(_bu, CONST_64(0x0BULL));
-    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    XOReq(_me, CONST_64(0x8000000000000000ULL));
     rounds12
 
     STORE128u( *(__m128i*)&(output[ 0]), UNPACKL( _ba, _be ) );
@@ -396,10 +396,30 @@ void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *outp
 
     XORdata4(_, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
     XOReq(_bu, CONST_64(0x0BULL));
-    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    XOReq(_me, CONST_64(0x8000000000000000ULL));
     rounds12
 
-    // TODO: extract the 512 * 4 bits of CV into the output
+    {
+        __m256i lanesL01, lanesL23, lanesH01, lanesH23;
+
+        lanesL01 = UNPACKL( _ba, _be );
+        lanesH01 = UNPACKH( _ba, _be );
+        lanesL23 = UNPACKL( _bi, _bo );
+        lanesH23 = UNPACKH( _bi, _bo );
+        STORE256u( output[  0], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 64], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[128], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[192], PERM128( lanesH01, lanesH23, 0x31 ) );
+
+        lanesL01 = UNPACKL( _bu, _ga );
+        lanesH01 = UNPACKH( _bu, _ga );
+        lanesL23 = UNPACKL( _ge, _gi );
+        lanesH23 = UNPACKH( _ge, _gi );
+        STORE256u( output[ 32], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 96], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[160], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[224], PERM128( lanesH01, lanesH23, 0x31 ) );
+    }
 }
 
 #undef XOR
@@ -552,10 +572,10 @@ void KT256_AVX512_Process8Leaves(const unsigned char *input, unsigned char *outp
 
     XORdata4(_, index, (const uint64_t *)input);
     XOReq(_bu, CONST_64(0x0BULL));
-    XOReq(_go, CONST_64(0x8000000000000000ULL));
+    XOReq(_me, CONST_64(0x8000000000000000ULL));
     rounds12
 
-    index = LOAD8_32(7*4, 6*4, 5*4, 4*4, 3*4, 2*4, 1*4, 0*4);
+    index = LOAD8_32(7*8, 6*8, 5*8, 4*8, 3*8, 2*8, 1*8, 0*8);
     STORE_SCATTER8_64(outputAsLanes+0, index, _ba);
     STORE_SCATTER8_64(outputAsLanes+1, index, _be);
     STORE_SCATTER8_64(outputAsLanes+2, index, _bi);

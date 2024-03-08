@@ -465,7 +465,7 @@ void KT256_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *outpu
 
     XORdata4(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize));
     XOReq128(Abu, _mm_set1_epi64x(0x0BULL));
-    XOReq128(Ago, _mm_set1_epi64x(0x8000000000000000ULL));
+    XOReq128(Ame, _mm_set1_epi64x(0x8000000000000000ULL));
     rounds12
 
     STORE128u( *(__m128i*)&(output[ 0]), UNPACKL( Aba, Abe ) );

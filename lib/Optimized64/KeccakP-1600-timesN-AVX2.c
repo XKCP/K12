@@ -440,11 +440,28 @@ void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output
 
     XORdata4(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
     XOReq256(Abu, CONST256_64(0x0BULL));
-    XOReq256(Ago, CONST256_64(0x8000000000000000ULL));
+    XOReq256(Ame, CONST256_64(0x8000000000000000ULL));
+    rounds12
 
     {
-        // TODO: extract the chaining value:
-        // 4 leaves, and 512 bits for each -> 2048 bits = 8 * 256 bits
-        // so output will have to fill output[0] to output[224]
+        __m256i lanesL01, lanesL23, lanesH01, lanesH23;
+
+        lanesL01 = UNPACKL( Aba, Abe );
+        lanesH01 = UNPACKH( Aba, Abe );
+        lanesL23 = UNPACKL( Abi, Abo );
+        lanesH23 = UNPACKH( Abi, Abo );
+        STORE256u( output[  0], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 64], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[128], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[192], PERM128( lanesH01, lanesH23, 0x31 ) );
+
+        lanesL01 = UNPACKL( Abu, Aga );
+        lanesH01 = UNPACKH( Abu, Aga );
+        lanesL23 = UNPACKL( Age, Agi );
+        lanesH23 = UNPACKH( Age, Agi );
+        STORE256u( output[ 32], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 96], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[160], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[224], PERM128( lanesH01, lanesH23, 0x31 ) );
     }
 }

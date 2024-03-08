@@ -88,8 +88,8 @@ void KT256_Process2Leaves(const unsigned char *input, unsigned char *output)
 void KT128_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output);
 void KT128_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output);
 
-void KT128_AVX2_Process8Leaves(const unsigned char *input, unsigned char *output);
-void KT128_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output);
+void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output);
 
 int KeccakP1600times4_IsAvailable()
 {
@@ -122,9 +122,9 @@ void KT128_Process4Leaves(const unsigned char *input, unsigned char *output)
 void KT256_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
     if (K12_enableAVX512) {
-        KT128_AVX512_Process4Leaves(input, output);
+        KT256_AVX512_Process4Leaves(input, output);
     } else if (K12_enableAVX2) {
-        KT128_AVX2_Process4Leaves(input, output);
+        KT256_AVX2_Process4Leaves(input, output);
     }
 }
 

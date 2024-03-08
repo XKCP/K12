@@ -145,6 +145,8 @@ typedef KCP_Phases KangarooTwelve_Phases;
 
 #define K12_chunkSize       8192
 #define K12_suffixLeaf      0x0B /* '110': message hop, simple padding, inner node */
+#define KT128_capacityInBytes   32
+#define KT256_capacityInBytes   64
 
 #ifndef KeccakP1600_disableParallelism
 
@@ -156,23 +158,27 @@ void KT256_Process4Leaves(const unsigned char *input, unsigned char *output);
 void KT256_Process8Leaves(const unsigned char *input, unsigned char *output);
 
 #define ProcessLeaves( Parallellism, CapacityInBytes ) \
-    assert(CapacityInBytes == 32 || CapacityInBytes == 64); \
-    if( CapacityInBytes == 32 ) { \
-         unsigned char intermediate[Parallellism * CapacityInBytes]; \
-        \
-        KT128##Process##Parallellism##Leaves(input, intermediate); \
-        input += Parallellism * K12_chunkSize; \
-        inputByteLen -= Parallellism * K12_chunkSize; \
-        ktInstance->blockNumber += Parallellism; \
-        TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
-    } else { \
-        unsigned char intermediate[Parallellism * CapacityInBytes]; \
-        \
-        KT256##Process##Parallellism##Leaves(input, intermediate); \
-        input += Parallellism * K12_chunkSize; \
-        inputByteLen -= Parallellism * K12_chunkSize; \
-        ktInstance->blockNumber += Parallellism; \
-        TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+    if( CapacityInBytes == KT128_capacityInBytes ) { \
+        while (inputByteLen >= Parallellism * K12_chunkSize) { \
+            unsigned char intermediate[Parallellism * KT128_capacityInBytes]; \
+            \
+            KT128_Process##Parallellism##Leaves(input, intermediate); \
+            input += Parallellism * K12_chunkSize; \
+            inputByteLen -= Parallellism * K12_chunkSize; \
+            ktInstance->blockNumber += Parallellism; \
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+        } \
+    } \
+    else if( CapacityInBytes == KT256_capacityInBytes ) { \
+        while (inputByteLen >= Parallellism * K12_chunkSize) { \
+            unsigned char intermediate[Parallellism * KT256_capacityInBytes]; \
+            \
+            KT256_Process##Parallellism##Leaves(input, intermediate); \
+            input += Parallellism * K12_chunkSize; \
+            inputByteLen -= Parallellism * K12_chunkSize; \
+            ktInstance->blockNumber += Parallellism; \
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+        } \
     }
 
 #endif  // KeccakP1600_disableParallelism
