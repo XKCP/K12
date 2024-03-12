@@ -19,6 +19,6 @@ jobs:
     - name: Install xsltproc
       run: sudo apt-get install xsltproc
     - name: Build
-      run: make ${{ matrix.target }}/K12Tests ${{ matrix.target }}/libk12.a ${{ matrix.target }}/libk12.so
+      run: make ${{ matrix.target }}/KTtests ${{ matrix.target }}/libKT.a ${{ matrix.target }}/libKT.so
     - name: Test
-      run: bin/${{ matrix.target }}/K12Tests -K12
+      run: bin/${{ matrix.target }}/KTtests -K12
