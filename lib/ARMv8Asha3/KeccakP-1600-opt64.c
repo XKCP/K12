@@ -210,6 +210,10 @@ void KT128_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
 }
 
+void KT256_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+}
+
 /* Keccak-p[1600]×8 */
 
 int KeccakP1600times8_IsAvailable()
@@ -223,5 +227,9 @@ const char * KeccakP1600times8_GetImplementation()
 }
 
 void KT128_Process8Leaves(const unsigned char *input, unsigned char *output)
+{
+}
+
+void KT256_Process8Leaves(const unsigned char *input, unsigned char *output)
 {
 }
