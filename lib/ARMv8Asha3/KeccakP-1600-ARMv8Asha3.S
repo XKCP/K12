@@ -19,8 +19,7 @@
 .balign 64  // strategic alignment and padding that allows to use
         // address value as loop termination condition...
     .quad   0,0,0,0,0,0,0,0
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .type   iotas,%object
 .endif
 iotas:
@@ -49,13 +48,11 @@ iotas12:
     .quad   0x8000000000008080
     .quad   0x0000000080000001
     .quad   0x8000000080008008
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   iotas,.-iotas
 .endif
 
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .type   KeccakP1600_ARMv8Asha3_Permute_12rounds_internal,%function
 .endif
 KeccakP1600_ARMv8Asha3_Permute_12rounds_internal:
@@ -157,19 +154,17 @@ KeccakP1600_ARMv8Asha3_Permute_12rounds_internal:
     bne .Loop_ce
 
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KeccakP1600_ARMv8Asha3_Permute_12rounds_internal,.-KeccakP1600_ARMv8Asha3_Permute_12rounds_internal
 .endif
 
-.ifdef macOS
-.globl  _KeccakP1600_ARMv8Asha3_Permute_12rounds
-_KeccakP1600_ARMv8Asha3_Permute_12rounds:
-.else
 .globl  KeccakP1600_ARMv8Asha3_Permute_12rounds
+.globl  _KeccakP1600_ARMv8Asha3_Permute_12rounds
+.ifndef old_gas_syntax
 .type   KeccakP1600_ARMv8Asha3_Permute_12rounds,%function
-KeccakP1600_ARMv8Asha3_Permute_12rounds:
 .endif
+KeccakP1600_ARMv8Asha3_Permute_12rounds:
+_KeccakP1600_ARMv8Asha3_Permute_12rounds:
 .balign 32
     stp x29,x30,[sp,#-80]!
     add x29,sp,#0
@@ -212,8 +207,7 @@ KeccakP1600_ARMv8Asha3_Permute_12rounds:
     ldp d14,d15,[sp,#64]
     ldr x29,[sp],#80
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KeccakP1600_ARMv8Asha3_Permute_12rounds,.-KeccakP1600_ARMv8Asha3_Permute_12rounds
 .endif
 
@@ -222,14 +216,13 @@ KeccakP1600_ARMv8Asha3_Permute_12rounds:
 //      unsigned int laneCount(x1) = 17 or 21,
 //      const unsigned char *data(x2),
 //      size_t dataByteLen(x3))
-.ifdef macOS
-.globl  _KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb
-_KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
-.else
 .globl  KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb
+.globl  _KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb
+.ifndef old_gas_syntax
 .type   KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb,%function
-KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
 .endif
+KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
+_KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
 .balign 32
     stp x29,x30,[sp,#-80]!
     add x29,sp,#0
@@ -377,19 +370,17 @@ KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
     ldr x29,[sp],#80
 
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb,.-KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb
 .endif
 
-.ifdef macOS
-.globl  _KeccakP1600times2_ARMv8Asha3_Permute_12rounds
-_KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
-.else
 .globl  KeccakP1600times2_ARMv8Asha3_Permute_12rounds
+.globl  _KeccakP1600times2_ARMv8Asha3_Permute_12rounds
+.ifndef old_gas_syntax
 .type   KeccakP1600times2_ARMv8Asha3_Permute_12rounds,%function
-KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
 .endif
+KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
+_KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
 .balign 32
     stp x29,x30,[sp,#-80]!
     add x29,sp,#0
@@ -425,19 +416,17 @@ KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
     ldr x29,[sp],#80
 
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KeccakP1600times2_ARMv8Asha3_Permute_12rounds,.-KeccakP1600times2_ARMv8Asha3_Permute_12rounds
 .endif
 
-.ifdef macOS
-.globl  _KT128_ARMv8Asha3_Process2Leaves
-_KT128_ARMv8Asha3_Process2Leaves:
-.else
 .globl  KT128_ARMv8Asha3_Process2Leaves
+.globl  _KT128_ARMv8Asha3_Process2Leaves
+.ifndef old_gas_syntax
 .type   KT128_ARMv8Asha3_Process2Leaves,%function
-KT128_ARMv8Asha3_Process2Leaves:
 .endif
+KT128_ARMv8Asha3_Process2Leaves:
+_KT128_ARMv8Asha3_Process2Leaves:
 .balign 32
     stp x29,x30,[sp,#-80]!
     add x29,sp,#0
@@ -665,19 +654,17 @@ KT128_ARMv8Asha3_Process2Leaves:
     ldr x29,[sp],#80
 
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KT128_ARMv8Asha3_Process2Leaves,.-KT128_ARMv8Asha3_Process2Leaves
 .endif
 
-.ifdef macOS
-.globl  _KT256_ARMv8Asha3_Process2Leaves
-_KT256_ARMv8Asha3_Process2Leaves:
-.else
 .globl  KT256_ARMv8Asha3_Process2Leaves
+.globl  _KT256_ARMv8Asha3_Process2Leaves
+.ifndef old_gas_syntax
 .type   KT256_ARMv8Asha3_Process2Leaves,%function
-KT256_ARMv8Asha3_Process2Leaves:
 .endif
+KT256_ARMv8Asha3_Process2Leaves:
+_KT256_ARMv8Asha3_Process2Leaves:
 .balign 32
     stp x29,x30,[sp,#-80]!
     add x29,sp,#0
@@ -846,7 +833,6 @@ KT256_ARMv8Asha3_Process2Leaves:
     ldr x29,[sp],#80
 
     ret
-.ifdef macOS
-.else
+.ifndef old_gas_syntax
 .size   KT256_ARMv8Asha3_Process2Leaves,.-KT256_ARMv8Asha3_Process2Leaves
 .endif
