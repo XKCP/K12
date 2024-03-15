@@ -54,12 +54,12 @@ cycles_t measurePerformance(int (*impl)(const unsigned char*, size_t,
 void KangarooTwelve_SetProcessorCapabilities();
 #endif
 
-void printKangarooTwelvePerformanceHeader( void )
+void printKangarooTwelvePerformanceHeader(int securityLevel)
 {
 #if defined(KeccakP1600_enable_simd_options) && !defined(KeccakP1600_disableParallelism)
     KangarooTwelve_SetProcessorCapabilities();
 #endif
-    printf("*** KangarooTwelve ***\n");
+    printf("*** KT%d ***\n", securityLevel);
     printf("Using Keccak-p[1600,12] implementations:\n");
     printf("- \303\2271: %s\n", KeccakP1600_GetImplementation());
     #if defined(KeccakP1600_12rounds_FastLoop_supported)
@@ -100,7 +100,7 @@ void printKangarooTwelvePerformanceHeader( void )
 
 void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
                                      unsigned char*, size_t,
-                                     const unsigned char*, size_t))
+                                     const unsigned char*, size_t), int extra)
 {
     const unsigned int chunkSize = 8192;
     unsigned halfTones;
@@ -121,7 +121,7 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
             timePlus2Blocks = measurePerformance(impl, calibration, i+2*chunkSize);
             timePlus4Blocks = measurePerformance(impl, calibration, i+4*chunkSize);
             timePlus8Blocks = measurePerformance(impl, calibration, i+8*chunkSize);
-            timePlus168Blocks = measurePerformance(impl, calibration, i+168*chunkSize);
+            timePlus168Blocks = measurePerformance(impl, calibration, i+extra*chunkSize);
         }
         printf("%8u bytes: %9"PRId64" %s, %6.3f %s/byte\n", i, time, getTimerUnit(), time*1.0/i, getTimerUnit());
         if (displaySlope) {
@@ -129,7 +129,7 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
             printf("     +2 blocks: %9"PRId64" %s, %6.3f %s/byte (slope)\n", timePlus2Blocks, getTimerUnit(), (timePlus2Blocks-(double)(time))*1.0/chunkSize/2.0, getTimerUnit());
             printf("     +4 blocks: %9"PRId64" %s, %6.3f %s/byte (slope)\n", timePlus4Blocks, getTimerUnit(), (timePlus4Blocks-(double)(time))*1.0/chunkSize/4.0, getTimerUnit());
             printf("     +8 blocks: %9"PRId64" %s, %6.3f %s/byte (slope)\n", timePlus8Blocks, getTimerUnit(), (timePlus8Blocks-(double)(time))*1.0/chunkSize/8.0, getTimerUnit());
-            printf("   +168 blocks: %9"PRId64" %s, %6.3f %s/byte (slope)\n", timePlus168Blocks, getTimerUnit(), (timePlus168Blocks-(double)(time))*1.0/chunkSize/168.0, getTimerUnit());
+            printf("   +%d blocks: %9"PRId64" %s, %6.3f %s/byte (slope)\n", extra, timePlus168Blocks, getTimerUnit(), (timePlus168Blocks-(double)(time))*1.0/chunkSize/(extra*1.0), getTimerUnit());
             displaySlope = 0;
         }
     }
@@ -145,8 +145,10 @@ void testPerformanceFull(int (*impl)(const unsigned char*, size_t,
 
 void testKangarooTwelvePerformance()
 {
-    printKangarooTwelvePerformanceHeader();
-    testPerformanceFull(KangarooTwelve);
+    printKangarooTwelvePerformanceHeader(128);
+    testPerformanceFull(KT128, 168);
+    printKangarooTwelvePerformanceHeader(256);
+    testPerformanceFull(KT256, 136);
 }
 void testPerformance()
 {
@@ -195,6 +197,6 @@ void testPerformance()
 
     if (comparison != NULL) {
       printf("\n*** Non-K12 function for comparison: ***\n");
-      testPerformanceFull(comparison);
+      testPerformanceFull(comparison, 128);
     }
 }

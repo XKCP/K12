@@ -41,8 +41,11 @@ int K12_enableAVX512 = 0;
 
 /* ---------------------------------------------------------------- */
 
-void KangarooTwelve_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output);
-void KangarooTwelve_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT128_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT128_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output);
+
+void KT256_SSSE3_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT256_AVX512_Process2Leaves(const unsigned char *input, unsigned char *output);
 
 int KeccakP1600times2_IsAvailable()
 {
@@ -63,18 +66,30 @@ const char * KeccakP1600times2_GetImplementation()
     }
 }
 
-void KangarooTwelve_Process2Leaves(const unsigned char *input, unsigned char *output)
+void KT128_Process2Leaves(const unsigned char *input, unsigned char *output)
 {
     if (K12_enableAVX512) {
-        KangarooTwelve_AVX512_Process2Leaves(input, output);
+        KT128_AVX512_Process2Leaves(input, output);
     } else if (K12_enableSSSE3) {
-        KangarooTwelve_SSSE3_Process2Leaves(input, output);
+        KT128_SSSE3_Process2Leaves(input, output);
+    }
+}
+
+void KT256_Process2Leaves(const unsigned char *input, unsigned char *output)
+{
+    if (K12_enableAVX512) {
+        KT256_AVX512_Process2Leaves(input, output);
+    } else if (K12_enableSSSE3) {
+        KT256_SSSE3_Process2Leaves(input, output);
     }
 }
 
 
-void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output);
-void KangarooTwelve_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT128_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT128_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output);
+
+void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT256_AVX512_Process4Leaves(const unsigned char *input, unsigned char *output);
 
 int KeccakP1600times4_IsAvailable()
 {
@@ -95,17 +110,27 @@ const char * KeccakP1600times4_GetImplementation()
     }
 }
 
-void KangarooTwelve_Process4Leaves(const unsigned char *input, unsigned char *output)
+void KT128_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
     if (K12_enableAVX512) {
-        KangarooTwelve_AVX512_Process4Leaves(input, output);
+        KT128_AVX512_Process4Leaves(input, output);
     } else if (K12_enableAVX2) {
-        KangarooTwelve_AVX2_Process4Leaves(input, output);
+        KT128_AVX2_Process4Leaves(input, output);
     }
 }
 
+void KT256_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+    if (K12_enableAVX512) {
+        KT256_AVX512_Process4Leaves(input, output);
+    } else if (K12_enableAVX2) {
+        KT256_AVX2_Process4Leaves(input, output);
+    }
+}
 
-void KangarooTwelve_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output);
+void KT128_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output);
+
+void KT256_AVX512_Process8Leaves(const unsigned char *input, unsigned char *output);
 
 int KeccakP1600times8_IsAvailable()
 {
@@ -123,10 +148,16 @@ const char * KeccakP1600times8_GetImplementation()
     }
 }
 
-void KangarooTwelve_Process8Leaves(const unsigned char *input, unsigned char *output)
+void KT128_Process8Leaves(const unsigned char *input, unsigned char *output)
 {
     if (K12_enableAVX512)
-        KangarooTwelve_AVX512_Process8Leaves(input, output);
+        KT128_AVX512_Process8Leaves(input, output);
+}
+
+void KT256_Process8Leaves(const unsigned char *input, unsigned char *output)
+{
+    if (K12_enableAVX512)
+        KT256_AVX512_Process8Leaves(input, output);
 }
 
 #endif  // KeccakP1600_disableParallelism

@@ -219,7 +219,7 @@ KeccakP1600_ARMv8Asha3_Permute_12rounds:
 
 // size_t KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb(
 //      void *state(x0),
-//      unsigned int laneCount(x1) = 21,
+//      unsigned int laneCount(x1) = 17 or 21,
 //      const unsigned char *data(x2),
 //      size_t dataByteLen(x3))
 .ifdef macOS
@@ -254,10 +254,14 @@ KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
 
     // Prepare the return value
     mov x11, #0
-    b .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop
+
+    cmp x1, #17
+    b.eq .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_17
+
+    b .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_21
 
 .balign 16
-.KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop:
+.KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_21:
     subs x3, x3, #8*21
     b.cc .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_end
 
@@ -302,7 +306,51 @@ KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb:
 
     add x11, x11, #8*21
 
-    b .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop
+    b .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_21
+
+.balign 16
+.KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_17:
+    subs x3, x3, #8*17
+    b.cc .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_end
+
+    // Lanes 0-3
+    ld1 {v27.8b-v30.8b}, [x2], #32
+    eor  v0.16b,  v0.16b, v27.16b
+    eor  v1.16b,  v1.16b, v28.16b
+    eor  v2.16b,  v2.16b, v29.16b
+    eor  v3.16b,  v3.16b, v30.16b
+
+    // Lanes 4-7
+    ld1 {v27.8b-v30.8b}, [x2], #32
+    eor  v4.16b,  v4.16b, v27.16b
+    eor  v5.16b,  v5.16b, v28.16b
+    eor  v6.16b,  v6.16b, v29.16b
+    eor  v7.16b,  v7.16b, v30.16b
+
+    // Lanes 8-11
+    ld1 {v27.8b-v30.8b}, [x2], #32
+    eor  v8.16b,  v8.16b, v27.16b
+    eor  v9.16b,  v9.16b, v28.16b
+    eor v10.16b, v10.16b, v29.16b
+    eor v11.16b, v11.16b, v30.16b
+
+    // Lanes 12-15
+    ld1 {v27.8b-v30.8b}, [x2], #32
+    eor v12.16b, v12.16b, v27.16b
+    eor v13.16b, v13.16b, v28.16b
+    eor v14.16b, v14.16b, v29.16b
+    eor v15.16b, v15.16b, v30.16b
+
+    // Lane 16
+    ld1 {v27.8b}, [x2], #8
+    eor v16.16b, v16.16b, v27.16b
+
+    bl KeccakP1600_ARMv8Asha3_Permute_12rounds_internal
+
+    add x11, x11, #8*17
+
+    b .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_loop_17
+
 .KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb_end:
 
     stp d0,d1,[x0,#8*0]
@@ -383,12 +431,12 @@ KeccakP1600times2_ARMv8Asha3_Permute_12rounds:
 .endif
 
 .ifdef macOS
-.globl  _KangarooTwelve_ARMv8Asha3_Process2Leaves
-_KangarooTwelve_ARMv8Asha3_Process2Leaves:
+.globl  _KT128_ARMv8Asha3_Process2Leaves
+_KT128_ARMv8Asha3_Process2Leaves:
 .else
-.globl  KangarooTwelve_ARMv8Asha3_Process2Leaves
-.type   KangarooTwelve_ARMv8Asha3_Process2Leaves,%function
-KangarooTwelve_ARMv8Asha3_Process2Leaves:
+.globl  KT128_ARMv8Asha3_Process2Leaves
+.type   KT128_ARMv8Asha3_Process2Leaves,%function
+KT128_ARMv8Asha3_Process2Leaves:
 .endif
 .balign 32
     stp x29,x30,[sp,#-80]!
@@ -429,8 +477,8 @@ KangarooTwelve_ARMv8Asha3_Process2Leaves:
 
     // Loop over the first 48 blocks
     mov x11, 48
-    b .KangarooTwelve_ARMv8Asha3_Process2Leaves_blocks
-.KangarooTwelve_ARMv8Asha3_Process2Leaves_blocks:
+    b .KT128_ARMv8Asha3_Process2Leaves_blocks
+.KT128_ARMv8Asha3_Process2Leaves_blocks:
 
     // Lanes 0-3
     ld1 {v25.1d-v28.1d}, [x0], #32
@@ -524,7 +572,7 @@ KangarooTwelve_ARMv8Asha3_Process2Leaves:
     bl KeccakP1600_ARMv8Asha3_Permute_12rounds_internal
 
     subs x11, x11, #1
-    bne .KangarooTwelve_ARMv8Asha3_Process2Leaves_blocks
+    bne .KT128_ARMv8Asha3_Process2Leaves_blocks
 
     // Lanes 0-3
     ld1 {v25.1d-v28.1d}, [x0], #32
@@ -619,5 +667,186 @@ KangarooTwelve_ARMv8Asha3_Process2Leaves:
     ret
 .ifdef macOS
 .else
-.size   KangarooTwelve_ARMv8Asha3_Process2Leaves,.-KangarooTwelve_ARMv8Asha3_Process2Leaves
+.size   KT128_ARMv8Asha3_Process2Leaves,.-KT128_ARMv8Asha3_Process2Leaves
+.endif
+
+.ifdef macOS
+.globl  _KT256_ARMv8Asha3_Process2Leaves
+_KT256_ARMv8Asha3_Process2Leaves:
+.else
+.globl  KT256_ARMv8Asha3_Process2Leaves
+.type   KT256_ARMv8Asha3_Process2Leaves,%function
+KT256_ARMv8Asha3_Process2Leaves:
+.endif
+.balign 32
+    stp x29,x30,[sp,#-80]!
+    add x29,sp,#0
+    stp d8,d9,[sp,#16]      // per ABI requirement
+    stp d10,d11,[sp,#32]
+    stp d12,d13,[sp,#48]
+    stp d14,d15,[sp,#64]
+
+    movi  v0.2d, #0
+    movi  v1.2d, #0
+    movi  v2.2d, #0
+    movi  v3.2d, #0
+    movi  v4.2d, #0
+    movi  v5.2d, #0
+    movi  v6.2d, #0
+    movi  v7.2d, #0
+    movi  v8.2d, #0
+    movi  v9.2d, #0
+    movi v10.2d, #0
+    movi v11.2d, #0
+    movi v12.2d, #0
+    movi v13.2d, #0
+    movi v14.2d, #0
+    movi v15.2d, #0
+    movi v16.2d, #0
+    movi v17.2d, #0
+    movi v18.2d, #0
+    movi v19.2d, #0
+    movi v20.2d, #0
+    movi v21.2d, #0
+    movi v22.2d, #0
+    movi v23.2d, #0
+    movi v24.2d, #0
+
+    // x12 is input + chunkSize
+    add x12, x0, #8192
+
+    // Loop over the first 60 blocks
+    mov x11, 60
+    b .KT256_ARMv8Asha3_Process2Leaves_blocks
+.KT256_ARMv8Asha3_Process2Leaves_blocks:
+
+    // Lanes 0-3
+    ld1 {v25.1d-v28.1d}, [x0], #32
+    ld1 {v25.d}[1], [x12], #8
+    ld1 {v26.d}[1], [x12], #8
+    ld1 {v27.d}[1], [x12], #8
+    ld1 {v28.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+    rev64 v26.16b, v26.16b
+    rev64 v27.16b, v27.16b
+    rev64 v28.16b, v28.16b
+#endif
+    eor v0.16b, v0.16b, v25.16b
+    eor v1.16b, v1.16b, v26.16b
+    eor v2.16b, v2.16b, v27.16b
+    eor v3.16b, v3.16b, v28.16b
+
+    // Lanes 4-7
+    ld1 {v25.1d-v28.1d}, [x0], #32
+    ld1 {v25.d}[1], [x12], #8
+    ld1 {v26.d}[1], [x12], #8
+    ld1 {v27.d}[1], [x12], #8
+    ld1 {v28.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+    rev64 v26.16b, v26.16b
+    rev64 v27.16b, v27.16b
+    rev64 v28.16b, v28.16b
+#endif
+    eor v4.16b, v4.16b, v25.16b
+    eor v5.16b, v5.16b, v26.16b
+    eor v6.16b, v6.16b, v27.16b
+    eor v7.16b, v7.16b, v28.16b
+
+    // Lanes 8-11
+    ld1 {v25.1d-v28.1d}, [x0], #32
+    ld1 {v25.d}[1], [x12], #8
+    ld1 {v26.d}[1], [x12], #8
+    ld1 {v27.d}[1], [x12], #8
+    ld1 {v28.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+    rev64 v26.16b, v26.16b
+    rev64 v27.16b, v27.16b
+    rev64 v28.16b, v28.16b
+#endif
+    eor  v8.16b,  v8.16b, v25.16b
+    eor  v9.16b,  v9.16b, v26.16b
+    eor v10.16b, v10.16b, v27.16b
+    eor v11.16b, v11.16b, v28.16b
+
+    // Lanes 12-15
+    ld1 {v25.1d-v28.1d}, [x0], #32
+    ld1 {v25.d}[1], [x12], #8
+    ld1 {v26.d}[1], [x12], #8
+    ld1 {v27.d}[1], [x12], #8
+    ld1 {v28.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+    rev64 v26.16b, v26.16b
+    rev64 v27.16b, v27.16b
+    rev64 v28.16b, v28.16b
+#endif
+    eor v12.16b, v12.16b, v25.16b
+    eor v13.16b, v13.16b, v26.16b
+    eor v14.16b, v14.16b, v27.16b
+    eor v15.16b, v15.16b, v28.16b
+
+    // Lane 16
+    ld1 {v25.d}[0], [x0], #8
+    ld1 {v25.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+#endif
+    eor v16.16b, v16.16b, v25.16b
+
+    bl KeccakP1600_ARMv8Asha3_Permute_12rounds_internal
+
+    subs x11, x11, #1
+    bne .KT256_ARMv8Asha3_Process2Leaves_blocks
+
+    // Lanes 0-3
+    ld1 {v25.1d-v28.1d}, [x0], #32
+    ld1 {v25.d}[1], [x12], #8
+    ld1 {v26.d}[1], [x12], #8
+    ld1 {v27.d}[1], [x12], #8
+    ld1 {v28.d}[1], [x12], #8
+#ifdef  __AARCH64EB__
+    rev64 v25.16b, v25.16b
+    rev64 v26.16b, v26.16b
+    rev64 v27.16b, v27.16b
+    rev64 v28.16b, v28.16b
+#endif
+    eor v0.16b, v0.16b, v25.16b
+    eor v1.16b, v1.16b, v26.16b
+    eor v2.16b, v2.16b, v27.16b
+    eor v3.16b, v3.16b, v28.16b
+
+    mov x13, #0x0B
+    dup v25.2d, x13
+    mov x13, #0x8000000000000000
+    dup v26.2d, x13
+    eor  v4.16b,  v4.16b, v25.16b
+    eor v16.16b, v16.16b, v26.16b
+
+    bl KeccakP1600_ARMv8Asha3_Permute_12rounds_internal
+
+    st1 {v0.1d-v3.1d}, [x1], #32
+    st1 {v4.1d-v7.1d}, [x1], #32
+    st1 {v0.d}[1], [x1], #8
+    st1 {v1.d}[1], [x1], #8
+    st1 {v2.d}[1], [x1], #8
+    st1 {v3.d}[1], [x1], #8
+    st1 {v4.d}[1], [x1], #8
+    st1 {v5.d}[1], [x1], #8
+    st1 {v6.d}[1], [x1], #8
+    st1 {v7.d}[1], [x1], #8
+
+    ldr x30,[sp,#8]
+    ldp d8,d9,[sp,#16]
+    ldp d10,d11,[sp,#32]
+    ldp d12,d13,[sp,#48]
+    ldp d14,d15,[sp,#64]
+    ldr x29,[sp],#80
+
+    ret
+.ifdef macOS
+.else
+.size   KT256_ARMv8Asha3_Process2Leaves,.-KT256_ARMv8Asha3_Process2Leaves
 .endif

@@ -206,7 +206,11 @@ const char * KeccakP1600times4_GetImplementation()
     return "";
 }
 
-void KangarooTwelve_Process4Leaves(const unsigned char *input, unsigned char *output)
+void KT128_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+}
+
+void KT256_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
 }
 
@@ -222,6 +226,10 @@ const char * KeccakP1600times8_GetImplementation()
     return "";
 }
 
-void KangarooTwelve_Process8Leaves(const unsigned char *input, unsigned char *output)
+void KT128_Process8Leaves(const unsigned char *input, unsigned char *output)
+{
+}
+
+void KT256_Process8Leaves(const unsigned char *input, unsigned char *output)
 {
 }

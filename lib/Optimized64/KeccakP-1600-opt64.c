@@ -973,7 +973,7 @@ void KeccakP1600_opt64_ExtractBytes(const void *state, unsigned char *data, unsi
   ((x & 0x00000000000000ffull) << 56))
 #endif
 
-#define addInput(X, input, laneCount) \
+#define addInput21(X, input, laneCount) \
     if (laneCount == 21) { \
         X##ba ^= HTOLE64(input[ 0]); \
         X##be ^= HTOLE64(input[ 1]); \
@@ -998,11 +998,33 @@ void KeccakP1600_opt64_ExtractBytes(const void *state, unsigned char *data, unsi
         X##sa ^= HTOLE64(input[20]); \
     } \
 
+#define addInput17(X, input, laneCount) \
+    if (laneCount == 17) { \
+        X##ba ^= HTOLE64(input[ 0]); \
+        X##be ^= HTOLE64(input[ 1]); \
+        X##bi ^= HTOLE64(input[ 2]); \
+        X##bo ^= HTOLE64(input[ 3]); \
+        X##bu ^= HTOLE64(input[ 4]); \
+        X##ga ^= HTOLE64(input[ 5]); \
+        X##ge ^= HTOLE64(input[ 6]); \
+        X##gi ^= HTOLE64(input[ 7]); \
+        X##go ^= HTOLE64(input[ 8]); \
+        X##gu ^= HTOLE64(input[ 9]); \
+        X##ka ^= HTOLE64(input[10]); \
+        X##ke ^= HTOLE64(input[11]); \
+        X##ki ^= HTOLE64(input[12]); \
+        X##ko ^= HTOLE64(input[13]); \
+        X##ku ^= HTOLE64(input[14]); \
+        X##ma ^= HTOLE64(input[15]); \
+        X##me ^= HTOLE64(input[16]); \
+    } \
+
 #include <assert.h>
 
 size_t KeccakP1600_opt64_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen)
 {
     size_t originalDataByteLen = dataByteLen;
+
     declareABCDE
     #ifndef KeccakP1600_opt64_fullUnrolling
     unsigned int i;
@@ -1010,17 +1032,27 @@ size_t KeccakP1600_opt64_12rounds_FastLoop_Absorb(void *state, unsigned int lane
     uint64_t *stateAsLanes = (uint64_t*)state;
     uint64_t *inDataAsLanes = (uint64_t*)data;
 
-    assert(laneCount == 21);
+    assert(laneCount == 21 || laneCount == 17);
 
-    #define laneCount 21
-    copyFromState(A, stateAsLanes)
-    while(dataByteLen >= laneCount*8) {
-        addInput(A, inDataAsLanes, laneCount)
-        rounds12
-        inDataAsLanes += laneCount;
-        dataByteLen -= laneCount*8;
+    if (laneCount == 21) {
+        copyFromState(A, stateAsLanes)
+        while(dataByteLen >= laneCount*8) {
+            addInput21(A, inDataAsLanes, laneCount)
+            rounds12
+            inDataAsLanes += laneCount;
+            dataByteLen -= laneCount*8;
+        }
+        copyToState(stateAsLanes, A)
+    } else if (laneCount == 17) {
+        copyFromState(A, stateAsLanes)
+        while(dataByteLen >= laneCount*8) {
+            addInput17(A, inDataAsLanes, laneCount)
+            rounds12
+            inDataAsLanes += laneCount;
+            dataByteLen -= laneCount*8;
+        }
+        copyToState(stateAsLanes, A)
     }
-    #undef laneCount
-    copyToState(stateAsLanes, A)
+    
     return originalDataByteLen - dataByteLen;
 }

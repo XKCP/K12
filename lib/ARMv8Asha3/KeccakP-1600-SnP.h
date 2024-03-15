@@ -47,10 +47,12 @@ size_t KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb(void *state, unsigned int
 int KeccakP1600times2_IsAvailable();
 const char * KeccakP1600times2_GetImplementation();
 void KeccakP1600times2_ARMv8Asha3_Permute_12rounds(void *state);
-void KangarooTwelve_ARMv8Asha3_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT128_ARMv8Asha3_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT256_ARMv8Asha3_Process2Leaves(const unsigned char *input, unsigned char *output);
 
 #define KeccakP1600times2_Permute_12rounds KeccakP1600times2_ARMv8Asha3_Permute_12rounds
-#define KangarooTwelve_Process2Leaves KangarooTwelve_ARMv8Asha3_Process2Leaves
+#define KT128_Process2Leaves KT128_ARMv8Asha3_Process2Leaves
+#define KT256_Process2Leaves KT256_ARMv8Asha3_Process2Leaves
 
 /* Keccak-p[1600]×4 */
 

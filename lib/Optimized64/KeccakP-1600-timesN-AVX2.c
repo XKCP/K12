@@ -342,11 +342,14 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     X##so = ZERO(); \
     X##su = ZERO(); \
 
-#define XORdata16(X, data0, data1, data2, data3) \
+#define XORdata4(X, data0, data1, data2, data3) \
     XOReq256(X##ba, LOAD4_64((data3)[ 0], (data2)[ 0], (data1)[ 0], (data0)[ 0])); \
     XOReq256(X##be, LOAD4_64((data3)[ 1], (data2)[ 1], (data1)[ 1], (data0)[ 1])); \
     XOReq256(X##bi, LOAD4_64((data3)[ 2], (data2)[ 2], (data1)[ 2], (data0)[ 2])); \
     XOReq256(X##bo, LOAD4_64((data3)[ 3], (data2)[ 3], (data1)[ 3], (data0)[ 3])); \
+
+#define XORdata16(X, data0, data1, data2, data3) \
+    XORdata4(X, data0, data1, data2, data3) \
     XOReq256(X##bu, LOAD4_64((data3)[ 4], (data2)[ 4], (data1)[ 4], (data0)[ 4])); \
     XOReq256(X##ga, LOAD4_64((data3)[ 5], (data2)[ 5], (data1)[ 5], (data0)[ 5])); \
     XOReq256(X##ge, LOAD4_64((data3)[ 6], (data2)[ 6], (data1)[ 6], (data0)[ 6])); \
@@ -360,9 +363,12 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     XOReq256(X##ku, LOAD4_64((data3)[14], (data2)[14], (data1)[14], (data0)[14])); \
     XOReq256(X##ma, LOAD4_64((data3)[15], (data2)[15], (data1)[15], (data0)[15])); \
 
-#define XORdata21(X, data0, data1, data2, data3) \
+#define XORdata17(X, data0, data1, data2, data3) \
     XORdata16(X, data0, data1, data2, data3) \
     XOReq256(X##me, LOAD4_64((data3)[16], (data2)[16], (data1)[16], (data0)[16])); \
+
+#define XORdata21(X, data0, data1, data2, data3) \
+    XORdata17(X, data0, data1, data2, data3) \
     XOReq256(X##mi, LOAD4_64((data3)[17], (data2)[17], (data1)[17], (data0)[17])); \
     XOReq256(X##mo, LOAD4_64((data3)[18], (data2)[18], (data1)[18], (data0)[18])); \
     XOReq256(X##mu, LOAD4_64((data3)[19], (data2)[19], (data1)[19], (data0)[19])); \
@@ -384,19 +390,20 @@ static ALIGN(AVX2alignment) const uint64_t KeccakP1600RoundConstants[24] = {
     thetaRhoPiChiIota(23, E, A)
 
 #define chunkSize 8192
-#define rateInBytes (21*8)
+#define KT128_rateInBytes (21*8)
+#define KT256_rateInBytes (17*8)
 
-void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
+void KT128_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
 {
     declareABCDE
     unsigned int j;
 
     initializeState(A);
 
-    for(j = 0; j < (chunkSize - rateInBytes); j += rateInBytes) {
+    for(j = 0; j < (chunkSize - KT128_rateInBytes); j += KT128_rateInBytes) {
         XORdata21(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
         rounds12
-        input += rateInBytes;
+        input += KT128_rateInBytes;
     }
 
     XORdata16(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
@@ -415,5 +422,46 @@ void KangarooTwelve_AVX2_Process4Leaves(const unsigned char *input, unsigned cha
         STORE256u( output[32], PERM128( lanesH01, lanesH23, 0x20 ) );
         STORE256u( output[64], PERM128( lanesL01, lanesL23, 0x31 ) );
         STORE256u( output[96], PERM128( lanesH01, lanesH23, 0x31 ) );
+    }
+}
+
+void KT256_AVX2_Process4Leaves(const unsigned char *input, unsigned char *output)
+{
+    declareABCDE
+    unsigned int j;
+
+    initializeState(A);
+
+    for(j = 0; j < (chunkSize - KT256_rateInBytes); j += KT256_rateInBytes) {
+        XORdata17(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+        rounds12
+        input += KT256_rateInBytes;
+    }
+
+    XORdata4(A, (const uint64_t *)input, (const uint64_t *)(input+chunkSize), (const uint64_t *)(input+2*chunkSize), (const uint64_t *)(input+3*chunkSize));
+    XOReq256(Abu, CONST256_64(0x0BULL));
+    XOReq256(Ame, CONST256_64(0x8000000000000000ULL));
+    rounds12
+
+    {
+        __m256i lanesL01, lanesL23, lanesH01, lanesH23;
+
+        lanesL01 = UNPACKL( Aba, Abe );
+        lanesH01 = UNPACKH( Aba, Abe );
+        lanesL23 = UNPACKL( Abi, Abo );
+        lanesH23 = UNPACKH( Abi, Abo );
+        STORE256u( output[  0], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 64], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[128], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[192], PERM128( lanesH01, lanesH23, 0x31 ) );
+
+        lanesL01 = UNPACKL( Abu, Aga );
+        lanesH01 = UNPACKH( Abu, Aga );
+        lanesL23 = UNPACKL( Age, Agi );
+        lanesH23 = UNPACKH( Age, Agi );
+        STORE256u( output[ 32], PERM128( lanesL01, lanesL23, 0x20 ) );
+        STORE256u( output[ 96], PERM128( lanesH01, lanesH23, 0x20 ) );
+        STORE256u( output[160], PERM128( lanesL01, lanesL23, 0x31 ) );
+        STORE256u( output[224], PERM128( lanesH01, lanesH23, 0x31 ) );
     }
 }

@@ -21,26 +21,21 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 /* ---------------------------------------------------------------- */
 
-#define K12_security        128
-#define K12_capacity        (2*K12_security)
-#define K12_capacityInBytes (K12_capacity/8)
-#define K12_rate            (1600-K12_capacity)
-#define K12_rateInBytes     (K12_rate/8)
-#define K12_rateInLanes     (K12_rate/64)
-
-static void TurboSHAKE128_Initialize(TurboSHAKE128_Instance *instance)
+static void TurboSHAKE_Initialize(TurboSHAKE_Instance *instance, int securityLevel)
 {
     KeccakP1600_Initialize(instance->state);
+    instance->rate = (1600-(2*securityLevel));
     instance->byteIOIndex = 0;
     instance->squeezing = 0;
 }
 
-static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigned char *data, size_t dataByteLen)
+static void TurboSHAKE_Absorb(TurboSHAKE_Instance *instance, const unsigned char *data, size_t dataByteLen)
 {
     size_t i, j;
     uint8_t partialBlock;
     const unsigned char *curData;
-    const uint8_t rateInBytes = K12_rateInBytes;
+
+    const uint8_t rateInBytes = instance->rate/8;
 
     assert(instance->squeezing == 0);
 
@@ -50,7 +45,7 @@ static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigne
         if ((instance->byteIOIndex == 0) && (dataByteLen-i >= rateInBytes)) {
 #ifdef KeccakP1600_12rounds_FastLoop_supported
             /* processing full blocks first */
-            j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, K12_rateInLanes, curData, dataByteLen - i);
+            j = KeccakP1600_12rounds_FastLoop_Absorb(instance->state, instance->rate/64, curData, dataByteLen - i);
             i += j;
             curData += j;
 #endif
@@ -80,9 +75,9 @@ static void TurboSHAKE128_Absorb(TurboSHAKE128_Instance *instance, const unsigne
     }
 }
 
-static void TurboSHAKE128_AbsorbDomainSeparationByte(TurboSHAKE128_Instance *instance, unsigned char D)
+static void TurboSHAKE_AbsorbDomainSeparationByte(TurboSHAKE_Instance *instance, unsigned char D)
 {
-    const unsigned int rateInBytes = K12_rateInBytes;
+    const unsigned int rateInBytes = instance->rate/8;
 
     assert(D != 0);
     assert(instance->squeezing == 0);
@@ -99,15 +94,15 @@ static void TurboSHAKE128_AbsorbDomainSeparationByte(TurboSHAKE128_Instance *ins
     instance->squeezing = 1;
 }
 
-static void TurboSHAKE128_Squeeze(TurboSHAKE128_Instance *instance, unsigned char *data, size_t dataByteLen)
+static void TurboSHAKE_Squeeze(TurboSHAKE_Instance *instance, unsigned char *data, size_t dataByteLen)
 {
     size_t i, j;
     unsigned int partialBlock;
-    const unsigned int rateInBytes = K12_rateInBytes;
+    const unsigned int rateInBytes = instance->rate/8;
     unsigned char *curData;
 
     if (!instance->squeezing)
-        TurboSHAKE128_AbsorbDomainSeparationByte(instance, 0x01);
+        TurboSHAKE_AbsorbDomainSeparationByte(instance, 0x01);
 
     i = 0;
     curData = data;
@@ -150,22 +145,40 @@ typedef KCP_Phases KangarooTwelve_Phases;
 
 #define K12_chunkSize       8192
 #define K12_suffixLeaf      0x0B /* '110': message hop, simple padding, inner node */
+#define KT128_capacityInBytes   32
+#define KT256_capacityInBytes   64
 
 #ifndef KeccakP1600_disableParallelism
 
-void KangarooTwelve_Process2Leaves(const unsigned char *input, unsigned char *output);
-void KangarooTwelve_Process4Leaves(const unsigned char *input, unsigned char *output);
-void KangarooTwelve_Process8Leaves(const unsigned char *input, unsigned char *output);
+void KT128_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT128_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT128_Process8Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process2Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process4Leaves(const unsigned char *input, unsigned char *output);
+void KT256_Process8Leaves(const unsigned char *input, unsigned char *output);
 
-#define ProcessLeaves( Parallellism ) \
-    while (inputByteLen >= Parallellism * K12_chunkSize) { \
-        unsigned char intermediate[Parallellism*K12_capacityInBytes]; \
-        \
-        KangarooTwelve_Process##Parallellism##Leaves(input, intermediate); \
-        input += Parallellism * K12_chunkSize; \
-        inputByteLen -= Parallellism * K12_chunkSize; \
-        ktInstance->blockNumber += Parallellism; \
-        TurboSHAKE128_Absorb(&ktInstance->finalNode, intermediate, Parallellism * K12_capacityInBytes); \
+#define ProcessLeaves( Parallellism, CapacityInBytes ) \
+    if( CapacityInBytes == KT128_capacityInBytes ) { \
+        while (inputByteLen >= Parallellism * K12_chunkSize) { \
+            unsigned char intermediate[Parallellism * KT128_capacityInBytes]; \
+            \
+            KT128_Process##Parallellism##Leaves(input, intermediate); \
+            input += Parallellism * K12_chunkSize; \
+            inputByteLen -= Parallellism * K12_chunkSize; \
+            ktInstance->blockNumber += Parallellism; \
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+        } \
+    } \
+    else if( CapacityInBytes == KT256_capacityInBytes ) { \
+        while (inputByteLen >= Parallellism * K12_chunkSize) { \
+            unsigned char intermediate[Parallellism * KT256_capacityInBytes]; \
+            \
+            KT256_Process##Parallellism##Leaves(input, intermediate); \
+            input += Parallellism * K12_chunkSize; \
+            inputByteLen -= Parallellism * K12_chunkSize; \
+            ktInstance->blockNumber += Parallellism; \
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, Parallellism * CapacityInBytes); \
+        } \
     }
 
 #endif  // KeccakP1600_disableParallelism
@@ -184,13 +197,14 @@ static unsigned int right_encode(unsigned char * encbuf, size_t value)
     return n + 1;
 }
 
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, size_t outputByteLen)
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen)
 {
     ktInstance->fixedOutputLength = outputByteLen;
     ktInstance->queueAbsorbedLen = 0;
     ktInstance->blockNumber = 0;
     ktInstance->phase = ABSORBING;
-    TurboSHAKE128_Initialize(&ktInstance->finalNode);
+    ktInstance->securityLevel = securityLevel;
+    TurboSHAKE_Initialize(&ktInstance->finalNode, securityLevel);
     return 0;
 }
 
@@ -202,7 +216,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
     if (ktInstance->blockNumber == 0) {
         /* First block, absorb in final node */
         unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? (unsigned int)inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
-        TurboSHAKE128_Absorb(&ktInstance->finalNode, input, len);
+        TurboSHAKE_Absorb(&ktInstance->finalNode, input, len);
         input += len;
         inputByteLen -= len;
         ktInstance->queueAbsorbedLen += len;
@@ -211,52 +225,56 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
             const unsigned char padding = 0x03; /* '110^6': message hop, simple padding */
             ktInstance->queueAbsorbedLen = 0;
             ktInstance->blockNumber = 1;
-            TurboSHAKE128_Absorb(&ktInstance->finalNode, &padding, 1);
+            TurboSHAKE_Absorb(&ktInstance->finalNode, &padding, 1);
             ktInstance->finalNode.byteIOIndex = (ktInstance->finalNode.byteIOIndex + 7) & ~7; /* Zero padding up to 64 bits */
         }
     } else if (ktInstance->queueAbsorbedLen != 0) {
         /* There is data in the queue, absorb further in queue until block complete */
         unsigned int len = (inputByteLen < (K12_chunkSize - ktInstance->queueAbsorbedLen)) ? (unsigned int)inputByteLen : (K12_chunkSize - ktInstance->queueAbsorbedLen);
-        TurboSHAKE128_Absorb(&ktInstance->queueNode, input, len);
+        TurboSHAKE_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inputByteLen -= len;
         ktInstance->queueAbsorbedLen += len;
         if (ktInstance->queueAbsorbedLen == K12_chunkSize) {
-            unsigned char intermediate[K12_capacityInBytes];
+            int capacityInBytes = 2*(ktInstance->securityLevel)/8;
+            unsigned char intermediate[capacityInBytes];
             ktInstance->queueAbsorbedLen = 0;
             ++ktInstance->blockNumber;
-            TurboSHAKE128_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
-            TurboSHAKE128_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
-            TurboSHAKE128_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
+            TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
+            TurboSHAKE_Squeeze(&ktInstance->queueNode, intermediate, capacityInBytes);
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, capacityInBytes);
         }
     }
 
 #ifndef KeccakP1600_disableParallelism
+    int capacityInBytes = 2*(ktInstance->securityLevel)/8;
+
     if (KeccakP1600times8_IsAvailable()) {
-        ProcessLeaves(8);
+        ProcessLeaves(8, capacityInBytes);
     }
 
     if (KeccakP1600times4_IsAvailable()) {
-        ProcessLeaves(4);
+        ProcessLeaves(4, capacityInBytes);
     }
 
     if (KeccakP1600times2_IsAvailable()) {
-        ProcessLeaves(2);
+        ProcessLeaves(2, capacityInBytes);
     }
 #endif
 
     while (inputByteLen > 0) {
         unsigned int len = (inputByteLen < K12_chunkSize) ? (unsigned int)inputByteLen : K12_chunkSize;
-        TurboSHAKE128_Initialize(&ktInstance->queueNode);
-        TurboSHAKE128_Absorb(&ktInstance->queueNode, input, len);
+        TurboSHAKE_Initialize(&ktInstance->queueNode, ktInstance->securityLevel);
+        TurboSHAKE_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inputByteLen -= len;
         if (len == K12_chunkSize) {
-            unsigned char intermediate[K12_capacityInBytes];
+            int capacityInBytes = 2*(ktInstance->securityLevel)/8;
+            unsigned char intermediate[capacityInBytes];
             ++ktInstance->blockNumber;
-            TurboSHAKE128_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
-            TurboSHAKE128_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
-            TurboSHAKE128_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
+            TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
+            TurboSHAKE_Squeeze(&ktInstance->queueNode, intermediate, capacityInBytes);
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, capacityInBytes);
         } else {
             ktInstance->queueAbsorbedLen = len;
         }
@@ -287,23 +305,24 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
 
         if (ktInstance->queueAbsorbedLen != 0) {
             /* There is data in the queue node */
-            unsigned char intermediate[K12_capacityInBytes];
+            int capacityInBytes = 2*(ktInstance->securityLevel)/8;
+            unsigned char intermediate[capacityInBytes];
             ++ktInstance->blockNumber;
-            TurboSHAKE128_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
-            TurboSHAKE128_Squeeze(&ktInstance->queueNode, intermediate, K12_capacityInBytes);
-            TurboSHAKE128_Absorb(&ktInstance->finalNode, intermediate, K12_capacityInBytes);
+            TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
+            TurboSHAKE_Squeeze(&ktInstance->queueNode, intermediate, capacityInBytes);
+            TurboSHAKE_Absorb(&ktInstance->finalNode, intermediate, capacityInBytes);
         }
         --ktInstance->blockNumber; /* Absorb right_encode(number of Chaining Values) || 0xFF || 0xFF */
         n = right_encode(encbuf, ktInstance->blockNumber);
         encbuf[n++] = 0xFF;
         encbuf[n++] = 0xFF;
-        TurboSHAKE128_Absorb(&ktInstance->finalNode, encbuf, n);
+        TurboSHAKE_Absorb(&ktInstance->finalNode, encbuf, n);
         padding = 0x06; /* '01': chaining hop, final node */
     }
-    TurboSHAKE128_AbsorbDomainSeparationByte(&ktInstance->finalNode, padding);
+    TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->finalNode, padding);
     if (ktInstance->fixedOutputLength != 0) {
         ktInstance->phase = FINAL;
-        TurboSHAKE128_Squeeze(&ktInstance->finalNode, output, ktInstance->fixedOutputLength);
+        TurboSHAKE_Squeeze(&ktInstance->finalNode, output, ktInstance->fixedOutputLength);
         return 0;
     }
     ktInstance->phase = SQUEEZING;
@@ -314,11 +333,11 @@ int KangarooTwelve_Squeeze(KangarooTwelve_Instance *ktInstance, unsigned char *o
 {
     if (ktInstance->phase != SQUEEZING)
         return 1;
-    TurboSHAKE128_Squeeze(&ktInstance->finalNode, output, outputByteLen);
+    TurboSHAKE_Squeeze(&ktInstance->finalNode, output, outputByteLen);
     return 0;
 }
 
-int KangarooTwelve(const unsigned char *input, size_t inputByteLen,
+int KangarooTwelve(int securityLevel, const unsigned char *input, size_t inputByteLen,
                    unsigned char *output, size_t outputByteLen,
                    const unsigned char *customization, size_t customByteLen)
 {
@@ -326,8 +345,24 @@ int KangarooTwelve(const unsigned char *input, size_t inputByteLen,
 
     if (outputByteLen == 0)
         return 1;
-    KangarooTwelve_Initialize(&ktInstance, outputByteLen);
+    KangarooTwelve_Initialize(&ktInstance, securityLevel, outputByteLen);
     if (KangarooTwelve_Update(&ktInstance, input, inputByteLen) != 0)
         return 1;
     return KangarooTwelve_Final(&ktInstance, output, customization, customByteLen);
+}
+
+/* ---------------------------------------------------------------- */
+
+int KT128(const unsigned char *input, size_t inputByteLen,
+                   unsigned char *output, size_t outputByteLen,
+                   const unsigned char *customization, size_t customByteLen)
+{
+    return KangarooTwelve(128, input, inputByteLen, output, outputByteLen, customization, customByteLen);
+}
+
+int KT256(const unsigned char *input, size_t inputByteLen,
+                   unsigned char *output, size_t outputByteLen,
+                   const unsigned char *customization, size_t customByteLen)
+{
+    return KangarooTwelve(256, input, inputByteLen, output, outputByteLen, customization, customByteLen);
 }
