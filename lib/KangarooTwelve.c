@@ -19,10 +19,6 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include "KangarooTwelve.h"
 #include "KeccakP-1600-SnP.h"
 
-#ifdef _MSC_VER
-#include <malloc.h>
-#endif
-
 /* ---------------------------------------------------------------- */
 
 static void TurboSHAKE_Initialize(TurboSHAKE_Instance *instance, int securityLevel)
@@ -152,6 +148,8 @@ typedef KCP_Phases KangarooTwelve_Phases;
 #define KT128_capacityInBytes   32
 #define KT256_capacityInBytes   64
 
+#define maxCapacityInBytes 64
+
 #ifndef KeccakP1600_disableParallelism
 
 void KT128_Process2Leaves(const unsigned char *input, unsigned char *output);
@@ -241,11 +239,8 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
         ktInstance->queueAbsorbedLen += len;
         if (ktInstance->queueAbsorbedLen == K12_chunkSize) {
             int capacityInBytes = 2*(ktInstance->securityLevel)/8;
-#ifndef _MSC_VER
-            unsigned char intermediate[capacityInBytes];
-#else
-            unsigned char* intermediate = _alloca(capacityInBytes);
-#endif
+            unsigned char intermediate[maxCapacityInBytes];
+            assert(capacityInBytes <= maxCapacityInBytes);
             ktInstance->queueAbsorbedLen = 0;
             ++ktInstance->blockNumber;
             TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
@@ -278,11 +273,8 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
         inputByteLen -= len;
         if (len == K12_chunkSize) {
             int capacityInBytes = 2*(ktInstance->securityLevel)/8;
-#ifndef _MSC_VER
-            unsigned char intermediate[capacityInBytes];
-#else
-            unsigned char* intermediate = _alloca(capacityInBytes);
-#endif
+            unsigned char intermediate[maxCapacityInBytes];
+            assert(capacityInBytes <= maxCapacityInBytes);
             ++ktInstance->blockNumber;
             TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
             TurboSHAKE_Squeeze(&ktInstance->queueNode, intermediate, capacityInBytes);
@@ -318,11 +310,8 @@ int KangarooTwelve_Final(KangarooTwelve_Instance *ktInstance, unsigned char *out
         if (ktInstance->queueAbsorbedLen != 0) {
             /* There is data in the queue node */
             int capacityInBytes = 2*(ktInstance->securityLevel)/8;
-#ifndef _MSC_VER
-            unsigned char intermediate[capacityInBytes];
-#else
-            unsigned char* intermediate = _alloca(capacityInBytes);
-#endif
+            unsigned char intermediate[maxCapacityInBytes];
+            assert(capacityInBytes <= maxCapacityInBytes);
             ++ktInstance->blockNumber;
             TurboSHAKE_AbsorbDomainSeparationByte(&ktInstance->queueNode, K12_suffixLeaf);
             TurboSHAKE_Squeeze(&ktInstance->queueNode, intermediate, capacityInBytes);
