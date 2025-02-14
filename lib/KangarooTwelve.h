@@ -40,13 +40,13 @@ typedef struct KangarooTwelve_InstanceStruct {
 } KangarooTwelve_Instance;
 
 /** Extendable ouput function KangarooTwelve.
+  * @param  securityLevel   128 for KT128 or 256 for KT256
   * @param  input           Pointer to the input message (M).
   * @param  inputByteLen    The length of the input message in bytes.
   * @param  output          Pointer to the output buffer.
   * @param  outputByteLen   The desired number of output bytes.
   * @param  customization   Pointer to the customization string (C).
   * @param  customByteLen   The length of the customization string in bytes.
-  * @param  securityLevel   The desired security strength level (128 bits or 256 bits).
   * @return 0 if successful, 1 otherwise.
   */
 int KangarooTwelve(int securityLevel, const unsigned char *input, size_t inputByteLen, unsigned char *output, size_t outputByteLen, const unsigned char *customization, size_t customByteLen);
@@ -64,7 +64,7 @@ int KT256(const unsigned char *input, size_t inputByteLen, unsigned char *output
 /**
   * Function to initialize a KangarooTwelve instance.
   * @param  ktInstance      Pointer to the instance to be initialized.
-  * @param  securityLevel   The desired security strength level (128 bits or 256 bits).
+  * @param  securityLevel   128 for KT128 or 256 for KT256
   * @param  outputByteLen   The desired number of output bytes,
   *                         or 0 for an arbitrarily-long output.
   * @return 0 if successful, 1 otherwise.

@@ -21,10 +21,10 @@ http://creativecommons.org/publicdomain/zero/1.0/
 
 /* ---------------------------------------------------------------- */
 
-static void TurboSHAKE_Initialize(TurboSHAKE_Instance *instance, int securityLevel)
+static void TurboSHAKE_Initialize(TurboSHAKE_Instance *instance, unsigned int capacity)
 {
     KeccakP1600_Initialize(instance->state);
-    instance->rate = (1600-(2*securityLevel));
+    instance->rate = 1600 - capacity;
     instance->byteIOIndex = 0;
     instance->squeezing = 0;
 }
@@ -201,12 +201,14 @@ static unsigned int right_encode(unsigned char * encbuf, size_t value)
 
 int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen)
 {
+    if ((securityLevel != 128) && (securityLevel != 256))
+        return 1;
     ktInstance->fixedOutputLength = outputByteLen;
     ktInstance->queueAbsorbedLen = 0;
     ktInstance->blockNumber = 0;
     ktInstance->phase = ABSORBING;
     ktInstance->securityLevel = securityLevel;
-    TurboSHAKE_Initialize(&ktInstance->finalNode, securityLevel);
+    TurboSHAKE_Initialize(&ktInstance->finalNode, 2*securityLevel);
     return 0;
 }
 
@@ -267,7 +269,7 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
 
     while (inputByteLen > 0) {
         unsigned int len = (inputByteLen < K12_chunkSize) ? (unsigned int)inputByteLen : K12_chunkSize;
-        TurboSHAKE_Initialize(&ktInstance->queueNode, ktInstance->securityLevel);
+        TurboSHAKE_Initialize(&ktInstance->queueNode, 2*ktInstance->securityLevel);
         TurboSHAKE_Absorb(&ktInstance->queueNode, input, len);
         input += len;
         inputByteLen -= len;
