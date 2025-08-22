@@ -66,6 +66,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <!-- KangarooTwelve -->
 
     <fragment name="KangarooTwelve">
+        <config>XKCP_has_KangarooTwelve</config>
         <h>lib/align.h</h>
         <c>lib/KangarooTwelve.c</c>
         <h>lib/KangarooTwelve.h</h>
@@ -91,6 +92,13 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <define>KeccakP1600_enable_simd_options</define>
     </fragment>
 
+    <!-- To compute a hash of a file -->
+    <fragment name="KeccakSum" inherits="KangarooTwelve">
+        <c>util/KeccakSum/KeccakSum.c</c>
+        <c>util/KeccakSum/base64.c</c>
+        <h>util/KeccakSum/base64.h</h>
+    </fragment>
+
     <!-- To make a library -->
     <fragment name="libKT.a" inherits="KangarooTwelve"/>
     <fragment name="libKT.so" inherits="KangarooTwelve"/>
@@ -112,7 +120,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <group all="all">
         <product delimiter="/">
             <factor set="generic32 generic64 generic64noAsm plain64 ARMv8Asha3"/>
-            <factor set="KTtests libKT.a libKT.so libKT.dylib"/>
+            <factor set="KTtests libKT.a libKT.so libKT.dylib KeccakSum"/>
         </product>
     </group>
 </build>
