@@ -363,9 +363,9 @@ void printHelp()
 #endif
     printf("\n");
     printf("The options are processed in order.\n");
-#ifdef XKCP_has_Sponge_Keccak
+#if defined(XKCP_has_Sponge_Keccak)
     printf("By default, it uses SHAKE128 and base64 display.\n");
-#elifdef XKCP_has_KangarooTwelve
+#elif defined(XKCP_has_KangarooTwelve)
     printf("By default, it uses KT128 and base64 display.\n");
 #else
 #error "No default algorithm defined."
@@ -379,12 +379,12 @@ int process(int argc, char* argv[])
     int base64 = 1;
     int i, r;
     int was_filename_or_string = 0;
-#ifdef XKCP_has_Sponge_Keccak
+#if defined(XKCP_has_Sponge_Keccak)
     specs.algorithm = algorithm_Keccak;
     specs.rate = 1344;
     specs.capacity = 256;
     specs.delimitedSuffix = 0x1F;
-#elifdef XKCP_has_KangarooTwelve
+#elif defined(XKCP_has_KangarooTwelve)
     specs.algorithm = algorithm_K12;
     specs.capacity = 256;
 #else
