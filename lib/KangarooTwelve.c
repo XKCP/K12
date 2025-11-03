@@ -18,7 +18,9 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #include <assert.h>
 #endif
 #include <string.h>
+#include <stdlib.h>
 #include "KangarooTwelve.h"
+#include "KangarooTwelve-threading.h"
 #include "KeccakP-1600-SnP.h"
 
 /* ---------------------------------------------------------------- */
@@ -203,7 +205,8 @@ static unsigned int right_encode(unsigned char * encbuf, size_t value)
     return n + 1;
 }
 
-int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen)
+int KangarooTwelve_Initialize_Threaded(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen,
+                                       const void *threadpool_api, void *threadpool_handle, int thread_count)
 {
     if ((securityLevel != 128) && (securityLevel != 256))
         return 1;
@@ -212,8 +215,16 @@ int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityL
     ktInstance->blockNumber = 0;
     ktInstance->phase = ABSORBING;
     ktInstance->securityLevel = securityLevel;
+    ktInstance->threadpool_api = threadpool_api;
+    ktInstance->threadpool_handle = threadpool_handle;
+    ktInstance->thread_count = thread_count;
     TurboSHAKE_Initialize(&ktInstance->finalNode, 2*securityLevel);
     return 0;
+}
+
+int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen)
+{
+    return KangarooTwelve_Initialize_Threaded(ktInstance, securityLevel, outputByteLen, NULL, NULL, 0);
 }
 
 int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned char *input, size_t inputByteLen)
@@ -258,6 +269,39 @@ int KangarooTwelve_Update(KangarooTwelve_Instance *ktInstance, const unsigned ch
     }
 
     int capacityInBytes = 2*(ktInstance->securityLevel)/8;
+
+    /* Try thread-based parallelism for large inputs */
+    size_t full_chunks = inputByteLen / K12_chunkSize;
+    const KT_ThreadPool_API* threadpool_api = (const KT_ThreadPool_API*)ktInstance->threadpool_api;
+
+    /* Check if input meets minimum threshold for threading and threading is enabled */
+    if (full_chunks > 0 && threadpool_api != NULL && ktInstance->thread_count > 1 &&
+        inputByteLen >= threadpool_api->min_input_size_for_threading) {
+        /* Process all full chunks in parallel using threads */
+        unsigned char *chaining_values = (unsigned char *)malloc(full_chunks * capacityInBytes);
+        if (chaining_values != NULL) {
+            if (KT_ProcessChunksThreaded(threadpool_api,
+                                        ktInstance->threadpool_handle,
+                                        ktInstance->thread_count,
+                                        input, full_chunks, chaining_values, ktInstance->securityLevel) == 0) {
+                /* Successfully processed chunks in parallel */
+                /* Absorb all chaining values into finalNode in order */
+                for (size_t i = 0; i < full_chunks; i++) {
+                    TurboSHAKE_Absorb(&ktInstance->finalNode,
+                                     chaining_values + (i * capacityInBytes),
+                                     capacityInBytes);
+                }
+                ktInstance->blockNumber += full_chunks;
+
+                /* Update input pointer and length */
+                input += full_chunks * K12_chunkSize;
+                inputByteLen -= full_chunks * K12_chunkSize;
+            }
+            free(chaining_values);
+        }
+    }
+
+    /* Fall back to SIMD parallelism for remaining chunks */
 #ifndef KeccakP1600_disableParallelism
     if (KeccakP1600times8_IsAvailable()) {
         ProcessLeaves(8, capacityInBytes);
