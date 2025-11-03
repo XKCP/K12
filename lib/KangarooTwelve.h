@@ -37,6 +37,10 @@ typedef struct KangarooTwelve_InstanceStruct {
     unsigned int queueAbsorbedLen;
     int phase;
     int securityLevel;
+    /* Thread pool for parallel chunk processing (optional, can be NULL) */
+    const void* threadpool_api;  /* KT_ThreadPool_API* */
+    void* threadpool_handle;
+    int thread_count;
 } KangarooTwelve_Instance;
 
 /** Extendable ouput function KangarooTwelve.
@@ -71,11 +75,34 @@ int KT256(const unsigned char *input, size_t inputByteLen, unsigned char *output
   */
 int KangarooTwelve_Initialize(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen);
 
+/**
+  * Function to initialize a KangarooTwelve instance with threading support.
+  * @param  ktInstance      Pointer to the instance to be initialized.
+  * @param  securityLevel   128 for KT128 or 256 for KT256
+  * @param  outputByteLen   The desired number of output bytes,
+  *                         or 0 for an arbitrarily-long output.
+  * @param  threadpool_api  Thread pool API (NULL for no threading).
+  *                         Must point to a KT_ThreadPool_API struct.
+  * @param  threadpool_handle  Thread pool handle (from threadpool_api->create()).
+  *                            Ignored if threadpool_api is NULL.
+  * @param  thread_count    Number of threads in the pool.
+  *                         Ignored if threadpool_api is NULL.
+  * @return 0 if successful, 1 otherwise.
+  */
+int KangarooTwelve_Initialize_Threaded(KangarooTwelve_Instance *ktInstance, int securityLevel, size_t outputByteLen,
+                                       const void *threadpool_api, void *threadpool_handle, int thread_count);
+
 #define KT128_Initialize(instance, outputByteLen) \
-    KangarooTwelve_Initialize((instance), 128, (outputByteLen));
+    KangarooTwelve_Initialize((instance), 128, (outputByteLen))
 
 #define KT256_Initialize(instance, outputByteLen) \
-    KangarooTwelve_Initialize((instance), 256, (outputByteLen));
+    KangarooTwelve_Initialize((instance), 256, (outputByteLen))
+
+#define KT128_Initialize_Threaded(instance, outputByteLen, threadpool_api, threadpool_handle, thread_count) \
+    KangarooTwelve_Initialize_Threaded((instance), 128, (outputByteLen), (threadpool_api), (threadpool_handle), (thread_count))
+
+#define KT256_Initialize_Threaded(instance, outputByteLen, threadpool_api, threadpool_handle, thread_count) \
+    KangarooTwelve_Initialize_Threaded((instance), 256, (outputByteLen), (threadpool_api), (threadpool_handle), (thread_count))
 
 /**
   * Function to give input data to be absorbed.

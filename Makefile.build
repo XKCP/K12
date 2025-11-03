@@ -70,6 +70,13 @@ http://creativecommons.org/publicdomain/zero/1.0/
         <h>lib/align.h</h>
         <c>lib/KangarooTwelve.c</c>
         <h>lib/KangarooTwelve.h</h>
+        <h>lib/KT-threadpool.h</h>
+        <c>lib/KT-threadpool.c</c>
+        <c>lib/KT-threadpool-pthread.c</c>
+        <c>lib/KT-threadpool-sequential.c</c>
+        <c>lib/KangarooTwelve-threading.c</c>
+        <h>lib/KangarooTwelve-threading.h</h>
+        <gcc>-pthread</gcc>
     </fragment>
 
     <!-- For the name of the targets, please see the end of this file. -->
