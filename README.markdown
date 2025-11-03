@@ -8,7 +8,7 @@ On Intel's Haswell and Skylake architectures, KT128 tops at less than 1.5 cycles
 On the latest Apple A14 and M1 processors, KangarooTwelve can take advantage of the ARMv8-A's SHA-3 dedicated instructions and KT128 delivers 0.75 cycles/byte for long messages on a single core.
 On low-end platforms, as well as for short messages, KT128 also benefits from about a factor two speed-up compared to the fastest FIPS 202 instance SHAKE128.
 
-More details can be found in our [ACNS paper][eprint] (KT128 only) and in the [RFC draft](ietf).
+More details can be found in our [ACNS paper][eprint] (KT128 only) and in [RFC 9861](rfc9861).
 
 # What can I find here?
 
@@ -72,7 +72,7 @@ Please refer to the documention of [XKCP][xkcp] for more details on the limitati
 [k12]: https://keccak.team/kangarootwelve.html
 [xkcp]: https://github.com/XKCP/XKCP
 [eprint]: https://eprint.iacr.org/2016/770.pdf
-[ietf]: https://datatracker.ietf.org/doc/draft-irtf-cfrg-kangarootwelve/
+[rfc9861]: https://datatracker.ietf.org/doc/rfc9861/
 
 
 # Acknowledgments
