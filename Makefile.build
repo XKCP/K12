@@ -85,6 +85,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
     <fragment name="common">
         <h>lib/align.h</h>
         <h>lib/brg_endian.h</h>
+        <h>lib/KT-atomic.h</h>
     </fragment>
 
     <!-- To run many tests -->

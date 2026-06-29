@@ -23,6 +23,7 @@ ARM CPU feature detection adapted from libaegis by Frank Denis.
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "KT-atomic.h"
 #include "KeccakP-1600-SnP.h"
 
 #ifdef KeccakP1600_disableParallelism
@@ -33,12 +34,12 @@ ARM CPU feature detection adapted from libaegis by Frank Denis.
 void KangarooTwelve_SetArmProcessorCapabilities();
 
 #ifdef KeccakP1600_enable_simd_options
-int K12_NEON_requested_disabled = 0;
-int K12_ARM_SHA3_requested_disabled = 0;
+K12_ATOMIC(int) K12_NEON_requested_disabled = 0;
+K12_ATOMIC(int) K12_ARM_SHA3_requested_disabled = 0;
 #endif  // KeccakP1600_enable_simd_options
 
-int K12_enableNEON = 0;
-int K12_enableARM_SHA3 = 0;
+K12_ATOMIC(int) K12_enableNEON = 0;
+K12_ATOMIC(int) K12_enableARM_SHA3 = 0;
 
 /* ---------------------------------------------------------------- */
 /* Platform-specific includes for CPU feature detection */
@@ -95,7 +96,7 @@ enum arm_cpu_feature {
     ARM_UNDEFINED = 1 << 30
 };
 
-static enum arm_cpu_feature g_arm_cpu_features = ARM_UNDEFINED;
+static K12_ATOMIC(int) g_arm_cpu_features = ARM_UNDEFINED;
 
 #if defined(K12_HAVE_LINUX_ARM) && defined(K12_HAVE_GETAUXVAL)
 static int _have_hwcap(unsigned long hwcap_bit) {
@@ -187,6 +188,12 @@ void KangarooTwelve_SetArmProcessorCapabilities() {
 #endif  // KeccakP1600_enable_simd_options
 }
 
+static void ensure_arm_capabilities(void) {
+    if (g_arm_cpu_features == ARM_UNDEFINED) {
+        KangarooTwelve_SetArmProcessorCapabilities();
+    }
+}
+
 /* ---------------------------------------------------------------- */
 /* External function declarations */
 /* ---------------------------------------------------------------- */
@@ -211,7 +218,6 @@ extern void KT256_ARMv8Asha3_Process2Leaves(const unsigned char *input, unsigned
 /* ---------------------------------------------------------------- */
 
 const char * KeccakP1600_GetImplementation() {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         return "ARMv8-A+SHA3 optimized implementation";
     } else {
@@ -220,22 +226,19 @@ const char * KeccakP1600_GetImplementation() {
 }
 
 void KeccakP1600_Initialize(void *state) {
-    KangarooTwelve_SetArmProcessorCapabilities();
+    ensure_arm_capabilities();
     KeccakP1600_opt64_Initialize(state);  // Both use same initialization
 }
 
 void KeccakP1600_AddByte(void *state, unsigned char data, unsigned int offset) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     KeccakP1600_opt64_AddByte(state, data, offset);  // Both use same AddByte
 }
 
 void KeccakP1600_AddBytes(void *state, const unsigned char *data, unsigned int offset, unsigned int length) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     KeccakP1600_opt64_AddBytes(state, data, offset, length);  // Both use same AddBytes
 }
 
 void KeccakP1600_Permute_12rounds(void *state) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         KeccakP1600_ARMv8Asha3_Permute_12rounds(state);
     } else {
@@ -244,12 +247,10 @@ void KeccakP1600_Permute_12rounds(void *state) {
 }
 
 void KeccakP1600_ExtractBytes(const void *state, unsigned char *data, unsigned int offset, unsigned int length) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     KeccakP1600_opt64_ExtractBytes(state, data, offset, length);  // Both use same ExtractBytes
 }
 
 size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount, const unsigned char *data, size_t dataByteLen) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         return KeccakP1600_ARMv8Asha3_12rounds_FastLoop_Absorb(state, laneCount, data, dataByteLen);
     } else {
@@ -262,12 +263,10 @@ size_t KeccakP1600_12rounds_FastLoop_Absorb(void *state, unsigned int laneCount,
 /* ---------------------------------------------------------------- */
 
 int KeccakP1600times2_IsAvailable() {
-    KangarooTwelve_SetArmProcessorCapabilities();
     return K12_enableARM_SHA3;
 }
 
 const char * KeccakP1600times2_GetImplementation() {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         return "ARMv8-A+SHA3 optimized implementation";
     } else {
@@ -276,21 +275,18 @@ const char * KeccakP1600times2_GetImplementation() {
 }
 
 void KeccakP1600times2_Permute_12rounds(void *state) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         KeccakP1600times2_ARMv8Asha3_Permute_12rounds(state);
     }
 }
 
 void KT128_Process2Leaves(const unsigned char *input, unsigned char *output) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         KT128_ARMv8Asha3_Process2Leaves(input, output);
     }
 }
 
 void KT256_Process2Leaves(const unsigned char *input, unsigned char *output) {
-    KangarooTwelve_SetArmProcessorCapabilities();
     if (K12_enableARM_SHA3) {
         KT256_ARMv8Asha3_Process2Leaves(input, output);
     }

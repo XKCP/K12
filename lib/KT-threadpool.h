@@ -27,6 +27,8 @@ http://creativecommons.org/publicdomain/zero/1.0/
  * The API is designed for batch job processing: submit multiple jobs, then
  * wait for all to complete. This matches the KangarooTwelve tree hashing
  * pattern where chunk processing is distributed across threads.
+ *
+ * Calls using the same pool handle must be serialized by the caller.
  */
 typedef struct KT_ThreadPool_API {
     /**

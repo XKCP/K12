@@ -325,6 +325,7 @@ int KT_ProcessChunksThreaded(const KT_ThreadPool_API* threadpool_api,
     size_t chunks_per_batch = chunkCount / num_batches;
     size_t extra_chunks = chunkCount % num_batches;
     size_t current_chunk = 0;
+    int submit_failed = 0;
 
     for (size_t i = 0; i < num_batches; i++) {
         /* First 'extra_chunks' batches get one additional chunk */
@@ -340,8 +341,8 @@ int KT_ProcessChunksThreaded(const KT_ThreadPool_API* threadpool_api,
         /* Submit batch to thread pool */
         if (threadpool_api->submit(threadpool_handle, process_chunk_range,
                                    &work_items[i]) != 0) {
-            free(work_items);
-            return 1;
+            submit_failed = 1;
+            break;
         }
 
         current_chunk += batch_chunks;
@@ -351,5 +352,5 @@ int KT_ProcessChunksThreaded(const KT_ThreadPool_API* threadpool_api,
     threadpool_api->wait_all(threadpool_handle);
 
     free(work_items);
-    return 0;
+    return submit_failed ? 1 : 0;
 }
